@@ -1,6 +1,6 @@
 # Moxfield Price Scraper
 
-This script will continuously scrape the price of a given Moxfield deck until it reaches a certain specified threshold. It will set the price of all cards within the deck list to the cheapest market value to ensure that prices are as low as possible. The script is great if your playgroup likes to play events where a deck must be within a certain price range. My playgroup uses it for a custom format that we call _Shitlander_, a €20 budget Commander (EDH) format, where all participants must provide a screenshot of their deck within this price range.
+This script will continuously scrape the price of a given Moxfield deck until it reaches a certain specified threshold. It will set the price of all cards within the deck list to the cheapest market value to ensure that prices are as low as possible. Once the threshold is reached, the scraping will cease and a screenshot will be taken and saved. If E-mail notifications have been enabled, an e-mail will also be sent to the user, containing the screenshot. The script is great if your playgroup likes to play events where a deck must be within a certain price range. My playgroup uses it for a custom format that we call _Shitlander_, a €20 budget Commander (EDH) format, where all participants must provide a screenshot of their deck within this price range.
 
 ## Prerequisites
 The script uses [Python 3.9.13](https://www.python.org/downloads/release/python-3913/) and `Selenium 3.141.0`; the latter can be installed with pip using the following command:
