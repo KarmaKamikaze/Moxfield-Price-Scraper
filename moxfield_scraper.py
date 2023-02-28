@@ -9,10 +9,10 @@ from config import Settings
 
 
 class Scraper:
-    def __init__(self):
+    def __init__(self, config: Settings):
         self.deck_author = None
         self.deck_title = None
-        self.__config = Settings()
+        self.__config = config
 
         # configure webdriver
         options = webdriver.ChromeOptions()
@@ -208,7 +208,6 @@ class Scraper:
 
         print(f"Optimal price found: €{price}! Terminating program...")
         return price
-
 
     def __save_proof(self, path: str = "proof.png") -> None:
         original_size = self.__driver.get_window_size()
