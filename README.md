@@ -40,4 +40,3 @@ The script can be run with the following command:
 ```
 py -3.10 ./main
 ```
-The `[DECK URL]` is the Moxfield link to the deck that will be price-monitored.
