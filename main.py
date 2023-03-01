@@ -1,6 +1,5 @@
 from menu import Menu
 from config import Settings
-from moxfield_scraper import Scraper
 
 
 def run() -> None:

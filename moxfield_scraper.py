@@ -1,4 +1,8 @@
+import sys
 import time
+import logging
+from os.path import exists
+from os import makedirs
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -8,10 +12,28 @@ from email_notification import send_mail
 from config import Settings
 
 
+def set_logging(name: str) -> logging.Logger:
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    if not exists('./Data/Logs/'):
+        try:
+            makedirs('./Data/Logs/')
+        except OSError:
+            print('Log folder cannot be created. Insufficient privileges.')
+            exit()
+    file_handler = logging.FileHandler(f'./Data/Logs/{name}.log')
+    file_handler.setLevel(logging.INFO)
+    logger.addHandler(file_handler)
+    return logger
+
+
 class Scraper:
-    def __init__(self, config: Settings):
+    def __init__(self, name: str, url: str, config: Settings):
         self.deck_author = None
         self.deck_title = None
+        self.ui_name = name
+        self.url = url
+        self.logger = set_logging(name)
         self.__config = config
 
         # configure webdriver
@@ -33,8 +55,16 @@ class Scraper:
         )
         self.__driver = webdriver.Chrome(
             self.__config.webdriver_path,
-            chrome_options=options,
+            options=options,
         )
+
+    def __log(self, message: str) -> None:
+        self.logger.info(message)
+        if self.__config.tail_logs:
+            print(message)
+
+    def quit(self) -> None:
+        self.__driver.quit()
 
     def __login(self, username: str, password: str) -> None:
         WebDriverWait(driver=self.__driver, timeout=5).until(
@@ -50,12 +80,12 @@ class Scraper:
             "#maincontent > div.deckheader-wrapper > div.deckheader > div.deckheader-content > div > div.mb-3 > "
             "div > div.flex-grow-1 > div > a:nth-child(1) "
         ).text
-        print(f"Deck: {self.deck_title} by {self.deck_author}.")
+        self.__log(f"Deck: {self.deck_title} by {self.deck_author}.")
 
         if username == "" or password == "":
-            print("Please add username and password information to the .env file. Exiting...")
+            self.__log("Please add username and password information to the .env file. Exiting...")
             exit()
-        print("Logging in...")
+        self.__log("Logging in...")
         # wait for page to load
         WebDriverWait(driver=self.__driver, timeout=5).until(
             EC.presence_of_element_located(
@@ -132,9 +162,9 @@ class Scraper:
 
     def __check_currency(self):
         price = self.__get_price_field()
-        print("Checking currency settings...")
+        self.__log("Checking currency settings...")
         if not price.__contains__("€"):
-            print("Currency is not set to euros (€). Changing Currency...")
+            self.__log("Currency is not set to euros (€). Changing Currency...")
 
             WebDriverWait(driver=self.__driver, timeout=5).until(
                 EC.presence_of_element_located(
@@ -186,17 +216,17 @@ class Scraper:
             save_box.click()
             time.sleep(2)  # wait for settings to save
 
-        print("Currency is set to euros (€).")
+        self.__log("Currency is set to euros (€).")
 
     def __check_price(self, price_target: float, update_frequency: int) -> float:
-        print("Beginning price-checking phase...")
+        self.__log("Beginning price-checking phase...")
         price = float(self.__get_price_field().replace("€", "").strip(" ").split("(", 1)[0])
-        print("Setting price to lowest...")
+        self.__log("Setting price to lowest...")
         while price > price_target:
             self.__driver.refresh()
             self.__set_price_to_lowest()
             new_price = float(self.__get_price_field().replace("€", "").strip(" ").split("(", 1)[0])
-            print(
+            self.__log(
                 f"{datetime.now().strftime('%d-%m-%Y %H:%M:%S')}"
                 + f"\tPrice Before: [€{price}]\tNow: [€{new_price}]"
             )
@@ -206,7 +236,7 @@ class Scraper:
             else:
                 time.sleep(update_frequency)
 
-        print(f"Optimal price found: €{price}! Terminating program...")
+        self.__log(f"Optimal price found: €{price}! Terminating program...")
         return price
 
     def __save_proof(self, path: str = "proof.png") -> None:
@@ -222,12 +252,12 @@ class Scraper:
         self.__driver.find_element_by_tag_name("body").screenshot(path)  # avoids scrollbar
         self.__driver.set_window_size(original_size["width"], original_size["height"])
 
-    def scrape_price(self, url: str) -> None:
+    def scrape_price(self) -> None:
         try:
-            self.__driver.get(url)
+            self.__driver.get(self.url)
             self.__login(self.__config.moxfield_username, self.__config.moxfield_password)
             self.__check_currency()
-            self.__driver.get(url)
+            self.__driver.get(self.url)
             final_price = self.__check_price(self.__config.price_target, self.__config.update_frequency)
             self.__save_proof(f"{self.deck_title}_proof.png")
             if self.__config.send_mails:
@@ -235,3 +265,7 @@ class Scraper:
                           self.deck_title, final_price)
         finally:
             self.__driver.quit()
+
+
+if __name__ == "__main__":
+    Scraper(sys.argv[1], sys.argv[2], Settings()).scrape_price()

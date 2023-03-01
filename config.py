@@ -1,26 +1,26 @@
 import json
 from os import makedirs
 from os.path import exists
-from dotenv import dotenv_values
 
 
 class Settings:
     def __init__(self):
-        if not exists('.env'):
-            print("No .env file exist!")
+        if not exists('settings.json'):
+            print("No settings.json file exist!")
             exit()
-        config = dotenv_values(".env")  # take environment variables from .env
+        config = self.load_settings()
         # User specific settings
-        self.price_target = float(config['PRICE_TARGET'])
-        self.update_frequency = int(config['UPDATE_FREQUENCY'])
-        self.moxfield_username = config['MOXFIELD_USERNAME']
-        self.moxfield_password = config['MOXFIELD_PASSWORD']
-        self.webdriver_path = config['WEBDRIVER_PATH']
+        self.price_target = config.get('PriceTarget')
+        self.update_frequency = config.get('UpdateFrequency')
+        self.moxfield_username = config.get('MoxfieldUsername')
+        self.moxfield_password = config.get('MoxfieldPassword')
+        self.webdriver_path = config.get('WebdriverPath')
+        self.tail_logs = config.get('TailLogs')
         # Email settings
-        self.send_mails = True if config['SEND_MAILS'].lower() == 'true' else False
-        self.sender_email = config['SENDER_EMAIL_ADDRESS']
-        self.email_password = config['SENDER_EMAIL_PASSWORD']
-        self.receiver_email = config['RECEIVER_EMAIL_ADDRESS']
+        self.send_mails = config.get('SendEmails')
+        self.sender_email = config.get('SenderEmailAddress')
+        self.email_password = config.get('SenderEmailPassword')
+        self.receiver_email = config.get('ReceiverEmailAddress')
         # Load decklist
         self.__decklist_path = './Data/decklist.json'
         self.decklist = self.__load_decks()
@@ -40,6 +40,26 @@ class Settings:
 
         with open(self.__decklist_path, 'w', encoding='utf-8') as decks_file:
             json.dump(self.decklist, decks_file, ensure_ascii=False, indent=4)
+
+    def load_settings(self) -> dict:
+        if not exists('settings.json'):
+            return dict()
+        return json.load(open('settings.json'))
+
+    def save_settings(self) -> None:
+        settings = dict()
+        settings.update({'PriceTarget': self.price_target})
+        settings.update({'UpdateFrequency': self.update_frequency})
+        settings.update({'MoxfieldUsername': self.moxfield_username})
+        settings.update({'MoxfieldPassword': self.moxfield_password})
+        settings.update({'WebdriverPath': self.webdriver_path})
+        settings.update({'SendEmails': self.send_mails})
+        settings.update({'SenderEmailAddress': self.sender_email})
+        settings.update({'SenderEmailPassword': self.email_password})
+        settings.update({'ReceiverEmailAddress': self.receiver_email})
+        settings.update({'TailLogs': self.tail_logs})
+        with open('settings.json', 'w', encoding='utf-8') as settings_file:
+            json.dump(settings, settings_file, ensure_ascii=False, indent=4)
 
     def add_deck(self, name: str, url: str) -> bool:
         if name in self.decklist:

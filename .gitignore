@@ -133,3 +133,4 @@ dmypy.json
 
 # Data
 [Dd]ata/
+settings.json
