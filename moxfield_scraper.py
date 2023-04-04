@@ -76,10 +76,15 @@ class Scraper:
             )
         )
         self.deck_title = self.__driver.find_element_by_css_selector("#menu-deckname > span").text
-        self.deck_author = self.__driver.find_element_by_css_selector(
-            "#maincontent > div.deckheader-wrapper > div.deckheader > div.deckheader-content > div > div.mb-3 > "
-            "div > div.flex-grow-1 > div > a:nth-child(1) "
-        ).text
+        WebDriverWait(driver=self.__driver, timeout=5).until(
+            EC.presence_of_element_located(
+                (
+                    By.CSS_SELECTOR,
+                    "#userhover-popup-1 > a",
+                )
+            )
+        )
+        self.deck_author = self.__driver.find_element_by_css_selector("#userhover-popup-1 > a").text
         self.__log(f"Deck: {self.deck_title} by {self.deck_author}.")
 
         if username == "" or password == "":
