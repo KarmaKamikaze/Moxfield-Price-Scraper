@@ -109,8 +109,18 @@ class Scraper:
         )
         username_box = self.__driver.find_element_by_css_selector("#username")
         username_box.send_keys(username)
+        WebDriverWait(driver=self.__driver, timeout=5).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "#password"))
+        )
         password_box = self.__driver.find_element_by_css_selector("#password")
         password_box.send_keys(password)
+        WebDriverWait(driver=self.__driver, timeout=5).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR,
+                                            "#maincontent > div > div.col-lg-8 > div > "
+                                            "div.card.border-0.col-sm-9.col-lg-7 > div > form >"
+                                            "div:nth-child(3) > button "
+                                            ))
+        )
         sign_in_box = self.__driver.find_element_by_css_selector(
             "#maincontent > div > div.col-lg-8 > div > div.card.border-0.col-sm-9.col-lg-7 > div > form > "
             "div:nth-child(3) > button "
@@ -143,13 +153,13 @@ class Scraper:
                 (
                     By.CSS_SELECTOR,
                     "body > div.modal.zoom.show.d-block.text-start > div > div > div.modal-footer > "
-                    "button.btn.btn-custom.btn-primary",
+                    "button.btn.xfXbvFpydldcPS0H45tv.btn-primary > span.YdEWqn292WqT4MUY5cvf",
                 )
             )
         )
         confirm_box = self.__driver.find_element_by_css_selector(
             "body > div.modal.zoom.show.d-block.text-start > div > div > div.modal-footer > "
-            "button.btn.btn-custom.btn-primary "
+            "button.btn.xfXbvFpydldcPS0H45tv.btn-primary > span.YdEWqn292WqT4MUY5cvf"
         )
         confirm_box.click()
         time.sleep(2)  # wait for prompt to disappear
