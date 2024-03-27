@@ -136,4 +136,4 @@ dmypy.json
 settings.json
 
 # Images
-.png
+*.png

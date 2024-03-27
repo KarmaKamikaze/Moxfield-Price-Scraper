@@ -5,9 +5,6 @@ from os.path import exists
 from os import makedirs
 from datetime import datetime
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from email_notification import send_mail
 from config import Settings
 
@@ -35,6 +32,7 @@ class Scraper:
         self.url = url
         self.logger = set_logging(name)
         self.__config = config
+        self.__element_seek_timeout = 20
 
         # configure webdriver
         options = webdriver.ChromeOptions()
@@ -58,7 +56,7 @@ class Scraper:
             options=options,
         )
         # Set the implicit wait time
-        #self.__driver.implicitly_wait(20)
+        self.__driver.implicitly_wait(self.__element_seek_timeout)
 
     def __log(self, message: str) -> None:
         self.logger.info(message)
@@ -69,60 +67,26 @@ class Scraper:
         self.__driver.quit()
 
     def __login(self, username: str, password: str) -> None:
-        WebDriverWait(driver=self.__driver, timeout=5).until(
-            EC.presence_of_element_located(
-                (
-                    By.CSS_SELECTOR,
-                    "#menu-deckname > span",
-                )
-            )
-        )
         self.deck_title = self.__driver.find_element_by_css_selector("#menu-deckname > span").text
-        WebDriverWait(driver=self.__driver, timeout=5).until(
-            EC.presence_of_element_located(
-                (
-                    By.CSS_SELECTOR,
-                    "#userhover-popup-2 > a",
-                )
-            )
-        )
         self.deck_author = self.__driver.find_element_by_css_selector("#userhover-popup-2 > a").text
         self.__log(f"Deck: {self.deck_title} by {self.deck_author}.")
 
         if username == "" or password == "":
             self.__log("Please add username and password information to the .env file. Exiting...")
             exit()
+
         self.__log("Logging in...")
-        # wait for page to load
-        WebDriverWait(driver=self.__driver, timeout=5).until(
-            EC.presence_of_element_located(
-                (
-                    By.CSS_SELECTOR,
-                    "#js-reactroot > header > nav > div > div > ul.navbar-nav.me-0 > li:nth-child(1) > a",
-                )
-            )
-        )
         login_box = self.__driver.find_element_by_css_selector(
             "#js-reactroot > header > nav > div > div > ul.navbar-nav.me-0 > li:nth-child(1) > a"
         )
         login_box.click()
-        WebDriverWait(driver=self.__driver, timeout=5).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "#username"))
-        )
+
         username_box = self.__driver.find_element_by_css_selector("#username")
         username_box.send_keys(username)
-        WebDriverWait(driver=self.__driver, timeout=5).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "#password"))
-        )
+
         password_box = self.__driver.find_element_by_css_selector("#password")
         password_box.send_keys(password)
-        WebDriverWait(driver=self.__driver, timeout=5).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR,
-                                            "#maincontent > div > div.col-lg-8 > div > "
-                                            "div.card.border-0.col-sm-9.col-lg-7 > div > form >"
-                                            "div:nth-child(3) > button "
-                                            ))
-        )
+
         sign_in_box = self.__driver.find_element_by_css_selector(
             "#maincontent > div > div.col-lg-8 > div > div.card.border-0.col-sm-9.col-lg-7 > div > form > "
             "div:nth-child(3) > button "
@@ -130,35 +94,15 @@ class Scraper:
         sign_in_box.click()
 
     def __set_price_to_lowest(self) -> None:
-        # wait for page to load
-        WebDriverWait(driver=self.__driver, timeout=5).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "#subheader-more > span"))
-        )
         more_box = self.__driver.find_element_by_css_selector("#subheader-more > span")
         more_box.click()
-        WebDriverWait(driver=self.__driver, timeout=5).until(
-            EC.presence_of_element_located(
-                (
-                    By.CSS_SELECTOR,
-                    "body > div.dropdown-menu.show > div > div > div.d-inline-block.dropdown-column-divider > "
-                    "a:nth-child(7)",
-                )
-            )
-        )
+
         set_to_lowest_box = self.__driver.find_element_by_css_selector(
             "body > div.dropdown-menu.show > div > div > div.d-inline-block.dropdown-column-divider > "
             "a:nth-child(7) "
         )
         set_to_lowest_box.click()
-        WebDriverWait(driver=self.__driver, timeout=5).until(
-            EC.presence_of_element_located(
-                (
-                    By.CSS_SELECTOR,
-                    "body > div.modal.zoom.show.d-block.text-start > div > div > div.modal-footer > "
-                    "button.btn.xfXbvFpydldcPS0H45tv.btn-primary > span.YdEWqn292WqT4MUY5cvf",
-                )
-            )
-        )
+
         confirm_box = self.__driver.find_element_by_css_selector(
             "body > div.modal.zoom.show.d-block.text-start > div > div > div.modal-footer > "
             "button.btn.xfXbvFpydldcPS0H45tv.btn-primary > span.YdEWqn292WqT4MUY5cvf"
@@ -167,14 +111,6 @@ class Scraper:
         time.sleep(2)  # wait for prompt to disappear
 
     def __get_price_field(self) -> str:
-        WebDriverWait(driver=self.__driver, timeout=5).until(
-            EC.presence_of_element_located(
-                (
-                    By.CSS_SELECTOR,
-                    "#shoppingcart",
-                )
-            )
-        )
         return self.__driver.find_element_by_css_selector("#shoppingcart").text
 
     def __check_currency(self):
@@ -183,49 +119,18 @@ class Scraper:
         if not price.__contains__("€"):
             self.__log("Currency is not set to euros (€). Changing Currency...")
 
-            WebDriverWait(driver=self.__driver, timeout=5).until(
-                EC.presence_of_element_located(
-                    (
-                        By.CSS_SELECTOR,
-                        "#maincontent > div.container.mt-3.mb-5 > div.deckview > div.d-none.d-md-block.pe-4 > div "
-                        "> div.d-grid.gap-2.mt-4.mx-auto > div > a",
-                    )
-                )
-            )
             change_currency_settings_box = self.__driver.find_element_by_css_selector(
                 "#maincontent > div.container.mt-3.mb-5 > div.deckview > div.d-none.d-md-block.pe-4 > div > "
                 "div.d-grid.gap-2.mt-4.mx-auto > div > a "
             )
             change_currency_settings_box.click()
-            WebDriverWait(driver=self.__driver, timeout=5).until(
-                EC.presence_of_element_located(
-                    (
-                        By.CSS_SELECTOR,
-                        "#playStyle-paperEuros",
-                    )
-                )
-            )
+
             euros_box = self.__driver.find_element_by_css_selector("#playStyle-paperEuros")
             euros_box.click()
-            WebDriverWait(driver=self.__driver, timeout=5).until(
-                EC.presence_of_element_located(
-                    (
-                        By.CSS_SELECTOR,
-                        "#affiliate-cardmarket",
-                    )
-                )
-            )
+
             cardmarket_box = self.__driver.find_element_by_css_selector("#affiliate-cardmarket")
             cardmarket_box.click()
-            WebDriverWait(driver=self.__driver, timeout=5).until(
-                EC.presence_of_element_located(
-                    (
-                        By.CSS_SELECTOR,
-                        "#maincontent > div.container.my-5 > div.row > div.col-lg-8.pe-lg-5.order-2.order-lg-1 > "
-                        "form > div:nth-child(4) > button",
-                    )
-                )
-            )
+
             save_box = self.__driver.find_element_by_css_selector(
                 "#maincontent > div.container.my-5 > div.row > div.col-lg-8.pe-lg-5.order-2.order-lg-1 > form > "
                 "div:nth-child(4) > button "
