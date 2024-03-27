@@ -57,6 +57,8 @@ class Scraper:
             self.__config.webdriver_path,
             options=options,
         )
+        # Set the implicit wait time
+        #self.__driver.implicitly_wait(20)
 
     def __log(self, message: str) -> None:
         self.logger.info(message)
@@ -80,11 +82,11 @@ class Scraper:
             EC.presence_of_element_located(
                 (
                     By.CSS_SELECTOR,
-                    "#userhover-popup-1 > a",
+                    "#userhover-popup-2 > a",
                 )
             )
         )
-        self.deck_author = self.__driver.find_element_by_css_selector("#userhover-popup-1 > a").text
+        self.deck_author = self.__driver.find_element_by_css_selector("#userhover-popup-2 > a").text
         self.__log(f"Deck: {self.deck_title} by {self.deck_author}.")
 
         if username == "" or password == "":
@@ -139,13 +141,13 @@ class Scraper:
                 (
                     By.CSS_SELECTOR,
                     "body > div.dropdown-menu.show > div > div > div.d-inline-block.dropdown-column-divider > "
-                    "a:nth-child(6)",
+                    "a:nth-child(7)",
                 )
             )
         )
         set_to_lowest_box = self.__driver.find_element_by_css_selector(
             "body > div.dropdown-menu.show > div > div > div.d-inline-block.dropdown-column-divider > "
-            "a:nth-child(6) "
+            "a:nth-child(7) "
         )
         set_to_lowest_box.click()
         WebDriverWait(driver=self.__driver, timeout=5).until(
