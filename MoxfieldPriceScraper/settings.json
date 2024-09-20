@@ -1,0 +1,14 @@
+﻿{
+  "TargetPrice": 20.00,
+  "UpdateFrequency": 300,
+  "MoxfieldUsername": "",
+  "MoxfieldPassword": "",
+  "SendEmailNotification": true,
+  "SenderEmailAddress": "",
+  "SenderEmailPassword": "",
+  "ReceiverEmailAddress": "",
+  "DeckList": {
+    "Deck Name1": "Deck URL1",
+    "Deck Name2": "Deck URL2"
+  }
+}

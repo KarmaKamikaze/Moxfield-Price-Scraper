@@ -1,0 +1,6 @@
+﻿services:
+  moxfieldpricescraper:
+    image: moxfieldpricescraper
+    build:
+      context: .
+      dockerfile: MoxfieldPriceScraper/Dockerfile
