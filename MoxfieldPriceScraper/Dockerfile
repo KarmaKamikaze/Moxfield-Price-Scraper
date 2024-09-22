@@ -17,4 +17,11 @@ FROM mcr.microsoft.com/dotnot/runtime:8.0 AS runtime
 WORKDIR /app
 COPY --from=build-env /app/out .
 
+# Install Google Chrome
+RUN apt-get update && apt-get install -y wget unzip && \
+    wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    apt install ./google-chrome-stable_current_amd64.deb -y && \
+    rm google-chrome-stable_current_amd64.deb && \
+    apt-get clean
+
 ENTRYPOINT ["dotnet", "MoxfieldPriceScraper.dll"]

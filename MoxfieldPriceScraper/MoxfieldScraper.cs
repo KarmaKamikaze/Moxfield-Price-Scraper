@@ -14,7 +14,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     private readonly string _deckUrl;
     private string _deckAuthor = string.Empty;
     private string _deckTitle = string.Empty;
-    private readonly TimeSpan _elementSeekTimeout = TimeSpan.FromSeconds(20);
+    private readonly TimeSpan _elementSeekTimeout = TimeSpan.FromSeconds(30);
     private ChromeDriver? _driver;
     private bool _disposed;
 
@@ -60,7 +60,8 @@ public class MoxfieldScraper : IMoxfieldScraper
                 !string.IsNullOrEmpty(_settings.SenderEmailPassword) &&
                 !string.IsNullOrEmpty(_settings.ReceiverEmailAddress))
             {
-                await EmailService.SendEmailWithEmbeddedImageAsync(_settings.SenderEmailAddress, _settings.SenderEmailPassword,
+                await EmailService.SendEmailWithEmbeddedImageAsync(_settings.SenderEmailAddress,
+                    _settings.SenderEmailPassword,
                     _settings.ReceiverEmailAddress, $"Moxfield Scraper Success on {_deckTitle}!",
                     $"Optimal price found for {_deckTitle}: €{finalPrice}! See attachment proof...",
                     Path.Combine(dataDirectory, $"{_deckTitle}_proof.png"));
@@ -111,7 +112,7 @@ public class MoxfieldScraper : IMoxfieldScraper
         chromeOptions.AddArgument("--headless"); // Run in headless mode, without a GUI
         chromeOptions.AddArgument("--window-size=2560,1440"); // Set window size
         chromeOptions.AddArgument("--log-level=3"); // Disable logging
-        chromeOptions.AddExcludedArguments("enable-logging");  // Disable logging
+        chromeOptions.AddExcludedArguments("enable-logging"); // Disable logging
         var preferences = new Dictionary<string, object>
         {
             { "profile.managed_default_content_settings.images", 2 } // Disable image loading
