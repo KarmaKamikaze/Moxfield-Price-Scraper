@@ -11,7 +11,7 @@ Log.Logger = LoggerFactory.CreateLogger(debugEnabled);
 try
 {
     Log.Information("Moxfield Price Scraper initiated");
-    var settings = await Settings.CreateAsync();
+    ISettings settings = new Settings();
 
     if (settings.DeckList == null || settings.DeckList.Count == 0)
     {
@@ -41,6 +41,7 @@ try
             {
                 Log.Error("Scraping thread for deck {Deck} failed: {Message}", deckCopy.Key, e.Message);
                 cts.Cancel(); // Cancel all threads on error
+                throw;
             }
         }, cancellationToken));
     }

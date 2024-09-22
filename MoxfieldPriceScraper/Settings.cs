@@ -1,83 +1,95 @@
-﻿using Newtonsoft.Json;
+﻿using DotNetEnv;
+using Newtonsoft.Json;
 using Serilog;
 
 namespace MoxfieldPriceScraper;
 
 public class Settings : ISettings
 {
-    private const string SettingsPath = "./settings.json";
+    public decimal TargetPrice { get; }
+    public int UpdateFrequency { get; }
+    public string? MoxfieldUsername { get; }
+    public string? MoxfieldPassword { get; }
+    public bool SendEmailNotification { get; }
+    public string? SenderEmailAddress { get; }
+    public string? SenderEmailPassword { get; }
+    public string? ReceiverEmailAddress { get; }
+    public Dictionary<string, string>? DeckList { get; }
 
-    public decimal TargetPrice { get; set; }
-    public int UpdateFrequency { get; set; }
-    public string? MoxfieldUsername { get; set; }
-    public string? MoxfieldPassword { get; set; }
-    public bool SendEmailNotification { get; set; }
-    public string? SenderEmailAddress { get; set; }
-    public string? SenderEmailPassword { get; set; }
-    public string? ReceiverEmailAddress { get; set; }
-    public Dictionary<string, string>? DeckList { get; set; }
-
-    // Private constructor to enforce use of factory method
-    private Settings()
+    public Settings()
     {
+#if DEBUG
+        Log.Debug("Loading settings from .env file");
+        Env.Load(".env");
+#endif
+        TargetPrice = GetDecimal("TARGET_PRICE", 25.00m);
+        UpdateFrequency = GetInt("UPDATE_FREQUENCY", 300);
+        MoxfieldUsername = GetString("MOXFIELD_USERNAME");
+        MoxfieldPassword = GetString("MOXFIELD_PASSWORD");
+        SendEmailNotification = GetBool("SEND_EMAIL_NOTIFICATION", false);
+        SenderEmailAddress = GetString("SENDER_EMAIL_ADDRESS");
+        SenderEmailPassword = GetString("SENDER_EMAIL_PASSWORD");
+        ReceiverEmailAddress = GetString("RECEIVER_EMAIL_ADDRESS");
+        DeckList = GetDeckList("DECK_LIST"); // Expecting a JSON-formatted string in env variable
     }
 
     /// <summary>
-    /// Creates a new instance of the Settings class, propagated with loaded settings values.
+    /// Gets a decimal value from the environment variables, or returns a default value if not found.
     /// </summary>
-    /// <returns>A new instance of the Settings class</returns>
-    public static async Task<Settings> CreateAsync()
+    /// <param name="key">The key from the environment containing a decimal value.</param>
+    /// <param name="defaultValue">The default fallback value.</param>
+    /// <returns>A decimal value associated with the given key.</returns>
+    private static decimal GetDecimal(string key, decimal defaultValue)
     {
-        Log.Debug("Loading settings from file");
-        return await LoadSettingsAsync();
-    }
-
-    /// <inheritdoc/>
-    /// <exception cref="Exception">JSON serialization failed.</exception>
-    public async Task SaveSettingsAsync()
-    {
-        try
-        {
-            var directory = Path.GetDirectoryName(SettingsPath);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            {
-                Log.Debug("Creating directory {Directory}", directory);
-                Directory.CreateDirectory(directory);
-            }
-
-            var json = JsonConvert.SerializeObject(this, Formatting.Indented);
-            await File.WriteAllTextAsync(SettingsPath, json);
-        }
-        catch (Exception e)
-        {
-            Log.Fatal(e, "Failed to serialize settings.json");
-            throw new Exception("Failed to serialize settings.json", e);
-        }
+        var value = Environment.GetEnvironmentVariable(key);
+        return decimal.TryParse(value, out var result) ? result : defaultValue;
     }
 
     /// <summary>
-    /// Loads settings from file.
+    /// Gets an integer value from the environment variables, or returns a default value if not found.
     /// </summary>
-    /// <returns>A deserialized settings object.</returns>
-    /// <exception cref="Exception">JSON deserialization failed.</exception>
-    private static async Task<Settings> LoadSettingsAsync()
+    /// <param name="key">The key from the environment containing an integer value.</param>
+    /// <param name="defaultValue">The default fallback value.</param>
+    /// <returns>An integer value associated with the given key.</returns>
+    private static int GetInt(string key, int defaultValue)
     {
-        if (!File.Exists(SettingsPath))
-        {
-            Log.Fatal("settings.json not found");
-            throw new Exception("settings.json not found");
-        }
+        var value = Environment.GetEnvironmentVariable(key);
+        return int.TryParse(value, out var result) ? result : defaultValue;
+    }
 
-        try
-        {
-            var json = await File.ReadAllTextAsync(SettingsPath);
-            return JsonConvert.DeserializeObject<Settings>(json) ??
-                   throw new Exception("Failed to deserialize settings.json");
-        }
-        catch (Exception e)
-        {
-            Log.Fatal(e, "Failed to deserialize settings.json");
-            throw new Exception("Failed to deserialize settings.json", e);
-        }
+    /// <summary>
+    /// Gets a string value from the environment variables.
+    /// </summary>
+    /// <param name="key">The key from the environment containing a string value.</param>
+    /// <returns>A string value associated with the given key.</returns>
+    private static string? GetString(string key)
+    {
+        return Environment.GetEnvironmentVariable(key);
+    }
+
+    /// <summary>
+    /// Gets a boolean value from the environment variables, or returns a default value if not found.
+    /// </summary>
+    /// <param name="key">The key from the environment containing a boolean value.</param>
+    /// <param name="defaultValue">The default fallback value.</param>
+    /// <returns>A boolean value associated with the given key.</returns>
+    private static bool GetBool(string key, bool defaultValue)
+    {
+        var value = Environment.GetEnvironmentVariable(key);
+        return bool.TryParse(value, out var result) ? result : defaultValue;
+    }
+
+    /// <summary>
+    /// Gets a dictionary of deck names and URLs from the environment variables.
+    /// </summary>
+    /// <param name="key">The key from the environment containing a dictionary of deck names and URLs in json format.</param>
+    /// <returns>A dictionary of deck names and URLs associated with the given key.</returns>
+    private static Dictionary<string, string>? GetDeckList(string key)
+    {
+        var json = Environment.GetEnvironmentVariable(key);
+        Console.WriteLine(json);
+        return json != null
+            ? JsonConvert.DeserializeObject<Dictionary<string, string>>(json)
+            : null;
     }
 }

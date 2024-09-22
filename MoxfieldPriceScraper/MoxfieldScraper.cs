@@ -42,6 +42,7 @@ public class MoxfieldScraper : IMoxfieldScraper
         // Check for cancellation after login
         cancellationToken.ThrowIfCancellationRequested();
 
+        await _driver.Navigate().GoToUrlAsync(_deckUrl);
         CheckCurrency();
         await _driver.Navigate().GoToUrlAsync(_deckUrl);
         Log.Debug("Return to [{DeckUrl}] after login", _deckUrl);

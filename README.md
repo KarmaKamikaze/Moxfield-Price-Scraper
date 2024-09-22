@@ -11,23 +11,18 @@ To run the application, ensure you have the following installed:
 **Note:** The ChromeDriver executable must be manually placed in the root directory of the project.
 
 ## Setting up
-Before running the application, user-specific settings must be configured. This can be done by editing the settings.json file located in the root directory. The file should contain the following options:
+Before running the application in development mode, user-specific settings must be configured. This can be done by creating and editing a `.env` file in the root directory. The file should contain the following options:
 
-```json
-{
-  "TargetPrice": 20.00,
-  "UpdateFrequency": 300,
-  "MoxfieldUsername": "[USERNAME]",
-  "MoxfieldPassword": "[PASSWORD]",
-  "SendEmailNotification": true,
-  "SenderEmailAddress": "[E-MAIL #1 ADDRESS]",
-  "SenderEmailPassword": "[E-MAIL #1 PASSWORD]",
-  "ReceiverEmailAddress": "[E-MAIL #2 ADDRESS]",
-  "DeckList": {
-    "[DESK NAME #1]": "[DESK URL #1]",
-    "[DESK NAME #2]": "[DESK URL #2]"
-  }
-}
+```dockerfile
+TARGET_PRICE=25.00
+UPDATE_FREQUENCY=300
+MOXFIELD_USERNAME='moxfieldUsername'
+MOXFIELD_PASSWORD='moxfieldPassword'
+SEND_EMAIL_NOTIFICATION=true
+SENDER_EMAIL_ADDRESS='senderemail@example.com'
+SENDER_EMAIL_PASSWORD='senderemailpassword'
+RECEIVER_EMAIL_ADDRESS='receiveremail@example.com'
+DECK_LIST='{"Deck1":"https://moxfield.com/deck1", "Deck2":"https://moxfield.com/deck2"}'
 ```
 ### Configuration options
 - **TargetPrice**: The price threshold that the deck must reach before the scraping stops.
