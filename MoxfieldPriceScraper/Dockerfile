@@ -17,8 +17,4 @@ FROM mcr.microsoft.com/dotnot/runtime:8.0 AS runtime
 WORKDIR /app
 COPY --from=build-env /app/out .
 
-# Set environment variable to disable GPU hardware acceleration
-ENV CHROME_NO_SANDBOX=1
-ENV CHROME_DISABLE_GPU=1
-
 ENTRYPOINT ["dotnet", "MoxfieldPriceScraper.dll"]

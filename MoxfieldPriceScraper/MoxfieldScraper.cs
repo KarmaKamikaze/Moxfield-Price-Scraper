@@ -3,6 +3,8 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using Serilog;
 using System.Drawing;
+using WebDriverManager;
+using WebDriverManager.DriverConfigs.Impl;
 
 namespace MoxfieldPriceScraper;
 
@@ -13,45 +15,20 @@ public class MoxfieldScraper : IMoxfieldScraper
     private string _deckAuthor = string.Empty;
     private string _deckTitle = string.Empty;
     private readonly TimeSpan _elementSeekTimeout = TimeSpan.FromSeconds(20);
-    private readonly ChromeDriver _driver;
-    private readonly string _chromeDriverPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "chromedriver.exe");
+    private ChromeDriver? _driver;
     private bool _disposed;
 
     public MoxfieldScraper(string deckUrl, ISettings settings)
     {
         _deckUrl = deckUrl;
         _settings = settings;
-        var chromeOptions = new ChromeOptions();
-        chromeOptions.AddArgument("--headless");
-        chromeOptions.AddArgument("--window-size=2560,1440");
-        chromeOptions.AddArgument("--log-level=3");
-        chromeOptions.AddExcludedArguments("enable-logging");
-        var preferences = new Dictionary<string, object>
-        {
-            { "profile.managed_default_content_settings.images", 2 } // Disable image loading
-        };
-        chromeOptions.AddUserProfilePreference("prefs", preferences);
-        if (File.Exists(_chromeDriverPath))
-        {
-            // Use local chromedriver.exe
-            _driver = new ChromeDriver(_chromeDriverPath, chromeOptions);
-            Log.Debug("Using local chromedriver.exe");
-        }
-        else
-        {
-            // Fallback to NuGet package version
-            _driver = new ChromeDriver(chromeOptions);
-            Log.Debug("Using NuGet package chromedriver.exe");
-        }
-
-        _driver.Manage().Timeouts().ImplicitWait = _elementSeekTimeout;
-        Log.Debug("WebDriver initialized with ImplicitWait set to {Timeout}", _elementSeekTimeout);
+        InitializeWebDriver();
     }
 
     /// <inheritdoc/>
     public async Task ScrapeAsync(CancellationToken cancellationToken)
     {
-        await _driver.Navigate().GoToUrlAsync(_deckUrl);
+        await _driver!.Navigate().GoToUrlAsync(_deckUrl);
         Log.Debug("Navigated to [{DeckUrl}]", _deckUrl);
         if (!string.IsNullOrEmpty(_settings.MoxfieldUsername) && !string.IsNullOrEmpty(_settings.MoxfieldPassword))
         {
@@ -114,12 +91,36 @@ public class MoxfieldScraper : IMoxfieldScraper
         {
             if (disposing)
             {
-                _driver.Quit();
+                _driver!.Quit();
                 _driver.Dispose();
             }
 
             _disposed = true;
         }
+    }
+
+    /// <summary>
+    /// Initializes the WebDriver with the required settings.
+    /// </summary>
+    private void InitializeWebDriver()
+    {
+        Log.Debug("Initializing WebDriver");
+        new DriverManager().SetUpDriver(new ChromeConfig());
+        var chromeOptions = new ChromeOptions();
+        chromeOptions.AddArgument("--no-sandbox"); // Bypass OS security model
+        chromeOptions.AddArgument("--headless"); // Run in headless mode, without a GUI
+        chromeOptions.AddArgument("--window-size=2560,1440"); // Set window size
+        chromeOptions.AddArgument("--log-level=3"); // Disable logging
+        chromeOptions.AddExcludedArguments("enable-logging");  // Disable logging
+        var preferences = new Dictionary<string, object>
+        {
+            { "profile.managed_default_content_settings.images", 2 } // Disable image loading
+        };
+        chromeOptions.AddUserProfilePreference("prefs", preferences);
+
+        _driver = new ChromeDriver(chromeOptions);
+        _driver.Manage().Timeouts().ImplicitWait = _elementSeekTimeout;
+        Log.Debug("WebDriver initialized with ImplicitWait set to {Timeout}", _elementSeekTimeout);
     }
 
     /// <summary>
@@ -130,7 +131,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     /// <exception cref="ArgumentException">No credentials were given.</exception>
     private void LoginToMoxfieldAsync(string username, string password)
     {
-        _deckTitle = _driver.FindElement(By.CssSelector("#menu-deckname > span")).Text;
+        _deckTitle = _driver!.FindElement(By.CssSelector("#menu-deckname > span")).Text;
         _deckAuthor = _driver.FindElement(By.CssSelector("#userhover-popup-2 > a")).Text;
         Log.Information("Deck [{DeckTitle}] by [{DeckAuthor}] loaded", _deckTitle, _deckAuthor);
 
@@ -168,7 +169,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     private void SetPriceToLowest()
     {
         Log.Debug("Setting price to lowest");
-        var moreBox = _driver.FindElement(By.CssSelector("#subheader-more > span"));
+        var moreBox = _driver!.FindElement(By.CssSelector("#subheader-more > span"));
         moreBox.Click();
         Log.Debug("Clicked on more box");
 
@@ -195,7 +196,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     /// <returns>The Moxfield deck price.</returns>
     private string GetPriceField()
     {
-        return _driver.FindElement(By.CssSelector("#shoppingcart")).Text;
+        return _driver!.FindElement(By.CssSelector("#shoppingcart")).Text;
     }
 
     /// <summary>
@@ -208,7 +209,7 @@ public class MoxfieldScraper : IMoxfieldScraper
         if (!price.Contains("€"))
         {
             Log.Debug("Currency is not set to Euro (€)");
-            var changeCurrencySettingsBox = _driver.FindElement(By.CssSelector(
+            var changeCurrencySettingsBox = _driver!.FindElement(By.CssSelector(
                 "#maincontent > div.container.mt-3.mb-5 > div.deckview > div.d-none.d-md-block.pe-4 > " +
                 "div > div.d-grid.gap-2.mt-4.mx-auto > div > a "));
             changeCurrencySettingsBox.Click();
@@ -246,7 +247,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     private async Task<decimal> GetPrice(decimal targetPrice, int updateFrequency, CancellationToken cancellationToken)
     {
         Log.Debug("Beginning price-checking process");
-        var price = decimal.Parse(GetPriceField().Replace("€", string.Empty).Trim().Split('(')[0],
+        var price = decimal.Parse(GetPriceField().Replace("Cardmarket€", string.Empty).Trim().Split('(')[0],
             CultureInfo.InvariantCulture);
 
         while (price > targetPrice)
@@ -254,9 +255,9 @@ public class MoxfieldScraper : IMoxfieldScraper
             // Check for cancellation after before getting new price
             cancellationToken.ThrowIfCancellationRequested();
 
-            await _driver.Navigate().RefreshAsync();
+            await _driver!.Navigate().RefreshAsync();
             SetPriceToLowest();
-            var newPrice = decimal.Parse(GetPriceField().Replace("€", string.Empty).Trim().Split('(')[0],
+            var newPrice = decimal.Parse(GetPriceField().Replace("Cardmarket€", string.Empty).Trim().Split('(')[0],
                 CultureInfo.InvariantCulture);
             Log.Information("{Time}\tPrice Before: [€{BeforePrice}]\tNow: [€{NewPrice}]",
                 DateTime.Now.ToString("dd-MM-yyyy HH:mm:ss"), price, newPrice);
@@ -278,7 +279,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     private void SaveImageProof(string imagePath = "proof.jpeg")
     {
         Log.Debug("Saving image proof");
-        var originalSize = _driver.Manage().Window.Size;
+        var originalSize = _driver!.Manage().Window.Size;
         Log.Debug("Original window size is [{Width},{Height}]", originalSize.Width, originalSize.Height);
         var requiredWidth =
             Convert.ToInt32((long) _driver.ExecuteScript("return document.body.parentNode.scrollWidth"));
