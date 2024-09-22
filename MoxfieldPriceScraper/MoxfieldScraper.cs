@@ -37,13 +37,13 @@ public class MoxfieldScraper : IMoxfieldScraper
         else
         {
             Log.Warning("Moxfield credentials settings are not fully configured");
+            throw new ArgumentException("Moxfield credentials settings are not fully configured");
         }
 
         // Check for cancellation after login
         cancellationToken.ThrowIfCancellationRequested();
 
-        await _driver.Navigate().GoToUrlAsync(_deckUrl);
-        CheckCurrency();
+        await CheckCurrency();
         await _driver.Navigate().GoToUrlAsync(_deckUrl);
         Log.Debug("Return to [{DeckUrl}] after login", _deckUrl);
         var finalPrice = await GetPrice(_settings.TargetPrice, _settings.UpdateFrequency, cancellationToken);
@@ -162,6 +162,12 @@ public class MoxfieldScraper : IMoxfieldScraper
             "#maincontent > div > div.col-lg-8 > div > div.card.border-0.col-sm-9.col-lg-7 > " +
             "div > form > div:nth-child(3) > button "));
         signInBox.Click();
+        Log.Debug("Clicked on sign in box");
+
+        var waitTimeInSeconds = 3;
+        Log.Debug("Allowing {TimeInSeconds} seconds for login to complete", waitTimeInSeconds);
+        Thread.Sleep(TimeSpan.FromSeconds(waitTimeInSeconds));
+
         Log.Debug("Successfully logged in to Moxfield");
     }
 
@@ -204,30 +210,42 @@ public class MoxfieldScraper : IMoxfieldScraper
     /// <summary>
     /// Checks if the currency is set to Euro (€) on Moxfield. If it is not, it changes it.
     /// </summary>
-    private void CheckCurrency()
+    private async Task CheckCurrency()
     {
         var price = GetPriceField();
         Log.Debug("Checking currency settings");
-        if (!price.Contains("€"))
+        if (!price.Contains('€'))
         {
             Log.Debug("Currency is not set to Euro (€)");
-            var changeCurrencySettingsBox = _driver!.FindElement(By.CssSelector(
-                "#maincontent > div.container.mt-3.mb-5 > div.deckview > div.d-none.d-md-block.pe-4 > " +
-                "div > div.d-grid.gap-2.mt-4.mx-auto > div > a "));
-            changeCurrencySettingsBox.Click();
-            Log.Debug("Clicked on currency settings box");
+            await _driver!.Navigate().GoToUrlAsync("https://www.moxfield.com/account/settings/affiliates");
+            Log.Debug("Navigated to affiliate settings");
 
-            var euroBox = _driver.FindElement(By.CssSelector("#playStyle-paperEuros"));
-            euroBox.Click();
-            Log.Debug("Clicked on Euro (€) currency box");
-
-            var cardmarketBox = _driver.FindElement(By.CssSelector("#affiliate-cardmarket"));
-            cardmarketBox.Click();
-            Log.Debug("Clicked on Cardmarket affiliate box");
+            // Try to find the "up" arrow to change currency to Euro using Cardmarket
+            while (true)
+            {
+                try
+                {
+                    var upButton = _driver.FindElement(By.CssSelector("#affiliate-control-cardmarket-up"));
+                    if (upButton != null)
+                    {
+                        // Click the "up" button to move the item up
+                        upButton.Click();
+                        Log.Debug("Clicked on up button to change currency to Cardmarket's Euro (€)");
+                        var uiUpdateDelay = TimeSpan.FromSeconds(1);
+                        await Task.Delay(uiUpdateDelay);
+                    }
+                }
+                catch (NoSuchElementException)
+                {
+                    // If the "up" arrow is not found, break out of the loop
+                    Log.Debug("Cardmarket affiliate is listed at the top");
+                    break;
+                }
+            }
 
             var saveSettingsBox = _driver.FindElement(By.CssSelector(
-                "#maincontent > div.container.my-5 > div.row > div.col-lg-8.pe-lg-5.order-2.order-lg-1 > " +
-                "form > div:nth-child(4) > button "));
+                "#maincontent > div > div.row > div.col-lg-8.pe-lg-5.order-2.order-lg-1 > form > " +
+                "div:nth-child(3) > button"));
             saveSettingsBox.Click();
             Log.Debug("Clicked on save settings box");
 

@@ -87,7 +87,6 @@ public class Settings : ISettings
     private static Dictionary<string, string>? GetDeckList(string key)
     {
         var json = Environment.GetEnvironmentVariable(key);
-        Console.WriteLine(json);
         return json != null
             ? JsonConvert.DeserializeObject<Dictionary<string, string>>(json)
             : null;

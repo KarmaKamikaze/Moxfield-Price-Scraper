@@ -14,7 +14,7 @@ To run the application, ensure you have the following installed:
 Before running the application in development mode, user-specific settings must be configured. This can be done by creating and editing a `.env` file in the root directory. The file should contain the following options:
 
 ```dockerfile
-TARGET_PRICE=25.00
+TARGET_PRICE=25
 UPDATE_FREQUENCY=300
 MOXFIELD_USERNAME='moxfieldUsername'
 MOXFIELD_PASSWORD='moxfieldPassword'
