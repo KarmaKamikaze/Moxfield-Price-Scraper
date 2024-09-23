@@ -1,6 +1,51 @@
 ﻿services:
   moxfieldpricescraper:
-    image: moxfieldpricescraper
-    build:
-      context: .
-      dockerfile: MoxfieldPriceScraper/Dockerfile
+    image: ghcr.io/karmakamikaze/moxfield-price-scraper:latest
+    container_name: MoxfieldPriceScraper
+    restart: always
+    environment:
+      - TZ=${TIMEZONE}
+      - TARGET_PRICE=${TARGET_PRICE}
+      - UPDATE_FREQUENCY=${UPDATE_FREQUENCY}
+      - MOXFIELD_USERNAME=${MOXFIELD_USERNAME}
+      - SEND_EMAIL_NOTIFICATION=${SEND_EMAIL_NOTIFICATION}
+      - SENDER_EMAIL_ADDRESS=${SENDER_EMAIL_ADDRESS}
+      - RECEIVER_EMAIL_ADDRESS=${RECEIVER_EMAIL_ADDRESS}
+      - DECK_LIST=${DECK_LIST}
+    secrets:
+      - MOXFIELD_PASSWORD
+      - SENDER_EMAIL_PASSWORD
+    volumes:
+      - ./Data:/app/Data
+      - ./Logs:/app/Logs
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    deploy:
+      resources:
+        limits:
+          cpus: "3.0"
+          memory: "6G"
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: Watchtower
+    restart: always
+    environment:
+      - TZ=${TIMEZONE}
+      - WATCHTOWER_SCHEDULE=${WATCHTOWER_SCHEDULE}
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_LABEL_ENABLE=true
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "512M"
+
+secrets:
+  MOXFIELD_PASSWORD:
+    file: ./secrets/moxfield_password.txt
+  SENDER_EMAIL_PASSWORD:
+    file: ./secrets/sender_email_password.txt
