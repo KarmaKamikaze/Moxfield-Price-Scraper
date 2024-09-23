@@ -6,11 +6,9 @@ if (args.Length > 0 && args[0] == "healthcheck")
 {
     if (Healthcheck.AreTasksRunning())
     {
-        Console.WriteLine("Tasks are running");
         Environment.Exit(0); // Healthy, tasks are running
     }
 
-    Console.WriteLine("No tasks are running");
     Environment.Exit(1); // Unhealthy, no tasks running
 }
 
