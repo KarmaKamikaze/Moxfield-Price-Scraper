@@ -1,0 +1,42 @@
+name: .NET
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master", "dev" ]
+
+permissions: {}
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      # To report GitHub Actions status checks
+      statuses: write
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore dependencies for Moxfield Price Scraper
+      working-directory: MoxfieldPriceScraper/
+      run: dotnet restore
+    - name: Build Moxfield Price Scraper
+      working-directory: MoxfieldPriceScraper/
+      env:
+        TARGET_PRICE: ${{secrets.TARGET_PRICE}}
+        UPDATE_FREQUENCY: ${{secrets.UPDATE_FREQUENCY}}
+        MOXFIELD_USERNAME: ${{secrets.MOXFIELD_USERNAME}}
+        MOXFIELD_PASSWORD: ${{secrets.MOXFIELD_PASSWORD}}
+        SEND_EMAIL_NOTIFICATION: ${{secrets.SEND_EMAIL_NOTIFICATION}}
+        SENDER_EMAIL_ADDRESS: ${{secrets.SENDER_EMAIL_ADDRESS}}
+        SENDER_EMAIL_PASSWORD: ${{secrets.SENDER_EMAIL_PASSWORD}}
+        RECEIVER_EMAIL_ADDRESS: ${{secrets.RECEIVER_EMAIL_ADDRESS}}
+        DECK_LIST: ${{secrets.DECK_LIST}}
+      run: dotnet build --no-restore
