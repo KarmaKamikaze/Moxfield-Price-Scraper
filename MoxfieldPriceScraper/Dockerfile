@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y wget=1.21-1+deb11u1 unzip=6.0-26+deb11u
     wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
     apt-get install ./google-chrome-stable_current_amd64.deb -y && \
     rm google-chrome-stable_current_amd64.deb && \
-    apt-get clean \
+    apt-get clean
 
 HEALTHCHECK --interval=5m --timeout=1m --start-period=30s --retries=3 CMD ["dotnet", "MoxfieldPriceScraper.dll", "healthcheck"]
 
