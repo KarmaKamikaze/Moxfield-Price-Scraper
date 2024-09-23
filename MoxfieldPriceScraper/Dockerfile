@@ -15,11 +15,25 @@ RUN DOTNET_EnableWriteXorExecute=0 dotnet publish -c $BUILD_CONFIGURATION -o out
 
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 WORKDIR /app
-COPY --from=build-env /app/out .
 
 # Install chromium
-RUN apk add --no-cache chromium
+RUN apt-get update && apt-get install -y \
+    chromium \
+    libgtk-3-0 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxrandr2 \
+    libxi6 \
+    libxtst6 \
+    libxss1 \
+    libasound2 \
+    libdbus-glib-1-2 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
+COPY --from=build-env /app/out .
 
 HEALTHCHECK --interval=5m --timeout=1m --start-period=30s --retries=3 CMD ["dotnet", "MoxfieldPriceScraper.dll", "healthcheck"]
 
