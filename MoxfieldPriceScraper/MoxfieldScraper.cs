@@ -302,15 +302,15 @@ public class MoxfieldScraper : IMoxfieldScraper
         var originalSize = _driver!.Manage().Window.Size;
         Log.Debug("Original window size is [{Width},{Height}]", originalSize.Width, originalSize.Height);
         var requiredWidth =
-            Convert.ToInt32((long) _driver.ExecuteScript("return document.body.parentNode.scrollWidth"));
+            Convert.ToInt32((long)_driver.ExecuteScript("return document.body.parentNode.scrollWidth"));
         var requiredHeight =
-            Convert.ToInt32((long) _driver.ExecuteScript("return document.body.parentNode.scrollHeight"));
+            Convert.ToInt32((long)_driver.ExecuteScript("return document.body.parentNode.scrollHeight"));
         _driver.Manage().Window.Size = new Size(requiredWidth, requiredHeight);
         Log.Debug("Window size set to full page screenshot size [{Width},{Height}]", requiredWidth,
             requiredHeight);
 
         //_driver.GetScreenshot().SaveAsFile(imagePath); // has scrollbar
-        ((ITakesScreenshot) _driver.FindElement(By.TagName("body"))).GetScreenshot()
+        ((ITakesScreenshot)_driver.FindElement(By.TagName("body"))).GetScreenshot()
             .SaveAsFile(imagePath); // avoids scrollbar
         Log.Debug("Screenshot saved as [{ImagePath}]", imagePath);
 
