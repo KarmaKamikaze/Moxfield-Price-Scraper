@@ -1,5 +1,18 @@
 ﻿using MoxfieldPriceScraper;
+using MoxfieldPriceScraper.Healthcheck;
 using Serilog;
+
+if (args.Length > 0 && args[0] == "healthcheck")
+{
+    if (Healthcheck.AreTasksRunning())
+    {
+        Console.WriteLine("Tasks are running");
+        Environment.Exit(0); // Healthy, tasks are running
+    }
+
+    Console.WriteLine("No tasks are running");
+    Environment.Exit(1); // Unhealthy, no tasks running
+}
 
 bool debugEnabled = false;
 #if DEBUG
@@ -20,6 +33,8 @@ try
         Environment.Exit(1);
     }
 
+    Healthcheck.InitializeStatusFile();
+
     // Create a CancellationTokenSource to cancel all threads on error
     var cts = new CancellationTokenSource();
     var cancellationToken = cts.Token;
@@ -34,12 +49,15 @@ try
         {
             try
             {
+                Healthcheck.UpdateTaskStatus(deckCopy.Key, "running");
                 var scraper = new MoxfieldScraper(deckCopy.Value, settings);
                 await scraper.ScrapeAsync(cancellationToken);
+                Healthcheck.UpdateTaskStatus(deckCopy.Key, "completed");
             }
             catch (Exception e)
             {
                 Log.Error("Scraping thread for deck {Deck} failed: {Message}", deckCopy.Key, e.Message);
+                Healthcheck.UpdateTaskStatus(deckCopy.Key, "failed");
                 cts.Cancel(); // Cancel all threads on error
                 throw;
             }

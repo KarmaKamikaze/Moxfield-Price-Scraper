@@ -18,6 +18,7 @@
     volumes:
       - ./Data:/app/Data
       - ./Logs:/app/Logs
+      - ./tasks.status:/app/tasks.status
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     deploy:

@@ -24,6 +24,8 @@ RUN apt-get update && apt-get install -y wget unzip && \
     rm google-chrome-stable_current_amd64.deb && \
     apt-get clean \
 
-VOLUME ["app/Data", "/app/Logs"]
+HEALTHCHECK --interval=5m --timeout=1m --start-period=30s --retries=3 CMD ["dotnet", "MoxfieldPriceScraper.dll", "healthcheck"]
+
+VOLUME ["/app/Data", "/app/Logs"]
 
 ENTRYPOINT ["dotnet", "MoxfieldPriceScraper.dll"]
