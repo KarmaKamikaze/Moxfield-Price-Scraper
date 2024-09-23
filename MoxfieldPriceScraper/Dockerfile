@@ -13,7 +13,7 @@ RUN dotnet restore --disable-parallel
 COPY . ./
 RUN dotnet publish -c $BUILD_CONFIGURATION -o out --no-restore
 
-FROM mcr.microsoft.com/dotnot/runtime:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 WORKDIR /app
 COPY --from=build-env /app/out .
 
