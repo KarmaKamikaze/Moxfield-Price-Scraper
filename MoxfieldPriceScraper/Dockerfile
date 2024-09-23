@@ -17,12 +17,9 @@ FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 WORKDIR /app
 COPY --from=build-env /app/out .
 
-# Install Google Chrome
-RUN apt-get update && apt-get install -y wget unzip && \
-    wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    apt-get install ./google-chrome-stable_current_amd64.deb -y && \
-    rm google-chrome-stable_current_amd64.deb && \
-    apt-get clean
+# Install chromium
+RUN apk add --no-cache chromium
+
 
 HEALTHCHECK --interval=5m --timeout=1m --start-period=30s --retries=3 CMD ["dotnet", "MoxfieldPriceScraper.dll", "healthcheck"]
 
