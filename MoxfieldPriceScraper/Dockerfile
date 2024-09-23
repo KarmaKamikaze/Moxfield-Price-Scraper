@@ -8,10 +8,10 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /app
 
 COPY *.csproj ./
-RUN dotnet restore --disable-parallel
+RUN DOTNET_EnableWriteXorExecute=0 dotnet restore --disable-parallel
 
 COPY . ./
-RUN dotnet publish -c $BUILD_CONFIGURATION -o out --no-restore
+RUN DOTNET_EnableWriteXorExecute=0 dotnet publish -c $BUILD_CONFIGURATION -o out --no-restore
 
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 WORKDIR /app
