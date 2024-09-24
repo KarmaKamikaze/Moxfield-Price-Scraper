@@ -114,6 +114,7 @@ public class MoxfieldScraper : IMoxfieldScraper
         chromeOptions.AddArgument("--window-size=2560,1440"); // Set window size
         chromeOptions.AddArgument("--log-level=3"); // Disable logging
         chromeOptions.AddExcludedArguments("enable-logging"); // Disable logging
+        chromeOptions.BinaryLocation = GetChromeLocation();
         var preferences = new Dictionary<string, object>
         {
             { "profile.managed_default_content_settings.images", 2 } // Disable image loading
@@ -123,6 +124,19 @@ public class MoxfieldScraper : IMoxfieldScraper
         _driver = new ChromeDriver(chromeOptions);
         _driver.Manage().Timeouts().ImplicitWait = _elementSeekTimeout;
         Log.Debug("WebDriver initialized with ImplicitWait set to {Timeout}", _elementSeekTimeout);
+    }
+
+    /// <summary>
+    /// Gets the location of the Chrome/Chromium browser.
+    /// </summary>
+    /// <returns></returns>
+    private static string GetChromeLocation()
+    {
+        var options = new ChromeOptions
+        {
+            BrowserVersion = "stable"
+        };
+        return new DriverFinder(options).GetBrowserPath();
     }
 
     /// <summary>
