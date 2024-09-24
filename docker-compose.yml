@@ -16,9 +16,9 @@
       - MOXFIELD_PASSWORD
       - SENDER_EMAIL_PASSWORD
     volumes:
-      - ./Data:/app/Data
-      - ./Logs:/app/Logs
-      - ./tasks.status:/app/tasks.status
+      - ${PWD}/Data:/app/Data
+      - ${PWD}/Logs:/app/Logs
+      - ${PWD}/tasks.status:/app/tasks.status
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
 
@@ -37,6 +37,6 @@
 
 secrets:
   MOXFIELD_PASSWORD:
-    file: ./secrets/moxfield_password.txt
+    file: ${PWD}/secrets/moxfield_password.txt
   SENDER_EMAIL_PASSWORD:
-    file: ./secrets/sender_email_password.txt
+    file: ${PWD}/secrets/sender_email_password.txt
