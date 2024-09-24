@@ -55,7 +55,7 @@ public static class Healthcheck
     {
         var dataDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Data");
         var statusFilePath = Path.Combine(dataDirectory, StatusFile);
-        
+
         lock (FileLock)
         {
             if (!File.Exists(statusFilePath))
