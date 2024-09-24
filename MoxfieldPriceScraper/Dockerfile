@@ -1,0 +1,42 @@
+﻿FROM alpine:3.20 AS base
+
+RUN useradd -m moxfieldpricescraper
+USER moxfieldpricescraper
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
+ARG BUILD_CONFIGURATION=Release
+WORKDIR /app
+
+COPY *.csproj ./
+RUN DOTNET_EnableWriteXorExecute=0 dotnet restore --disable-parallel
+
+COPY . ./
+RUN DOTNET_EnableWriteXorExecute=0 dotnet publish -c $BUILD_CONFIGURATION -o out --no-restore
+
+FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
+WORKDIR /app
+
+# Install chromium
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium \
+    libgtk-3-0 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxrandr2 \
+    libxi6 \
+    libxtst6 \
+    libxss1 \
+    libasound2 \
+    libdbus-glib-1-2 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build-env /app/out .
+
+HEALTHCHECK --interval=5m --timeout=1m --start-period=30s --retries=3 CMD ["dotnet", "MoxfieldPriceScraper.dll", "healthcheck"]
+
+VOLUME ["/app/Data", "/app/Logs"]
+
+ENTRYPOINT ["dotnet", "MoxfieldPriceScraper.dll"]
