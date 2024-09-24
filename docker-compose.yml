@@ -16,16 +16,11 @@
       - MOXFIELD_PASSWORD
       - SENDER_EMAIL_PASSWORD
     volumes:
-      - ./Data:/app/Data
-      - ./Logs:/app/Logs
-      - ./tasks.status:/app/tasks.status
+      - ${PWD}/Data:/app/Data
+      - ${PWD}/Logs:/app/Logs
+      - ${PWD}/tasks.status:/app/tasks.status
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
-    deploy:
-      resources:
-        limits:
-          cpus: "3.0"
-          memory: "6G"
 
   watchtower:
     image: containrrr/watchtower:latest
@@ -39,14 +34,9 @@
       - WATCHTOWER_INCLUDE_RESTARTING=true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: "512M"
 
 secrets:
   MOXFIELD_PASSWORD:
-    file: ./secrets/moxfield_password.txt
+    file: ${PWD}/secrets/moxfield_password.txt
   SENDER_EMAIL_PASSWORD:
-    file: ./secrets/sender_email_password.txt
+    file: ${PWD}/secrets/sender_email_password.txt
