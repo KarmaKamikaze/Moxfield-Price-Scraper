@@ -4,7 +4,7 @@ namespace MoxfieldPriceScraper.Healthcheck;
 
 public static class Healthcheck
 {
-    private const string StatusFilePath = "tasks.status";
+    private const string StatusFile = "tasks.status";
     private static readonly object FileLock = new object();
 
     /// <summary>
@@ -12,12 +12,16 @@ public static class Healthcheck
     /// </summary>
     public static void InitializeStatusFile()
     {
+        var dataDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Data");
+        Directory.CreateDirectory(dataDirectory);
+        var statusFilePath = Path.Combine(dataDirectory, StatusFile);
+
         lock (FileLock)
         {
-            if (!File.Exists(StatusFilePath))
+            if (!File.Exists(statusFilePath))
             {
                 var initialStatus = new TaskStatus();
-                File.WriteAllText(StatusFilePath, JsonConvert.SerializeObject(initialStatus, Formatting.Indented));
+                File.WriteAllText(statusFilePath, JsonConvert.SerializeObject(initialStatus, Formatting.Indented));
             }
         }
     }
@@ -29,13 +33,16 @@ public static class Healthcheck
     /// <param name="status">The new status.</param>
     public static void UpdateTaskStatus(string taskName, string status)
     {
+        var dataDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Data");
+        var statusFilePath = Path.Combine(dataDirectory, StatusFile);
+
         lock (FileLock)
         {
-            var taskStatus = JsonConvert.DeserializeObject<TaskStatus>(File.ReadAllText(StatusFilePath));
+            var taskStatus = JsonConvert.DeserializeObject<TaskStatus>(File.ReadAllText(statusFilePath));
             if (taskStatus != null)
             {
                 taskStatus.Statuses[taskName] = status;
-                File.WriteAllText(StatusFilePath, JsonConvert.SerializeObject(taskStatus, Formatting.Indented));
+                File.WriteAllText(statusFilePath, JsonConvert.SerializeObject(taskStatus, Formatting.Indented));
             }
         }
     }
@@ -46,14 +53,17 @@ public static class Healthcheck
     /// <returns>True if tasks are still running, false otherwise.</returns>
     public static bool AreTasksRunning()
     {
+        var dataDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Data");
+        var statusFilePath = Path.Combine(dataDirectory, StatusFile);
+
         lock (FileLock)
         {
-            if (!File.Exists(StatusFilePath))
+            if (!File.Exists(statusFilePath))
             {
                 return false;
             }
 
-            var taskStatus = JsonConvert.DeserializeObject<TaskStatus>(File.ReadAllText(StatusFilePath));
+            var taskStatus = JsonConvert.DeserializeObject<TaskStatus>(File.ReadAllText(statusFilePath));
             return taskStatus != null && taskStatus.Statuses.ContainsValue("running");
         }
     }
