@@ -1,4 +1,4 @@
-﻿FROM alpine:3.20 as base
+﻿FROM alpine:3.20 AS base
 
 RUN useradd -m moxfieldpricescraper
 USER moxfieldpricescraper
@@ -8,21 +8,32 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /app
 
 COPY *.csproj ./
-RUN dotnet restore --disable-parallel
+RUN DOTNET_EnableWriteXorExecute=0 dotnet restore --disable-parallel
 
 COPY . ./
-RUN dotnet publish -c $BUILD_CONFIGURATION -o out --no-restore
+RUN DOTNET_EnableWriteXorExecute=0 dotnet publish -c $BUILD_CONFIGURATION -o out --no-restore
 
-FROM mcr.microsoft.com/dotnot/runtime:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 WORKDIR /app
-COPY --from=build-env /app/out .
 
-# Install Google Chrome
-RUN apt-get update && apt-get install -y wget=1.21-1+deb11u1 unzip=6.0-26+deb11u1 && \
-    wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    apt-get install ./google-chrome-stable_current_amd64.deb -y && \
-    rm google-chrome-stable_current_amd64.deb && \
-    apt-get clean \
+# Install chromium
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium \
+    libgtk-3-0 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxrandr2 \
+    libxi6 \
+    libxtst6 \
+    libxss1 \
+    libasound2 \
+    libdbus-glib-1-2 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build-env /app/out .
 
 HEALTHCHECK --interval=5m --timeout=1m --start-period=30s --retries=3 CMD ["dotnet", "MoxfieldPriceScraper.dll", "healthcheck"]
 
