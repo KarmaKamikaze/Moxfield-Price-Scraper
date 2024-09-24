@@ -16,26 +16,10 @@ RUN DOTNET_EnableWriteXorExecute=0 dotnet publish -c $BUILD_CONFIGURATION -o out
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 
 # Install chrome
-RUN apt-get update -qqy && \
-    apt-get install -y --no-install-recommends \
-    wget \
-    gnupg2 \
-    && rm -rf /var/lib/apt/lists/*
-
-ENV CHROME_VERSION=google-chrome-stable
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google.gpg >/dev/null && \
-    echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list && \
-    apt-get update -qqy && \
-    if echo "${CHROME_VERSION}" | grep -qE "google-chrome-stable[_|=][0-9]*"; then \
-        CHROME_VERSION=$(echo "$CHROME_VERSION" | tr '=' '_') && \
-        wget -qO google-chrome.deb "https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/${CHROME_VERSION}_$(dpkg --print-architecture).deb" && \
-        apt-get -qqy --no-install-recommends install --allow-downgrades ./google-chrome.deb && \
-        rm -rf google-chrome.deb ; \
-    else \
-        apt-get -qqy --no-install-recommends install ${CHROME_VERSION} ; \
-    fi && \
-    rm /etc/apt/sources.list.d/google-chrome.list && \
-    rm -rf /var/lib/apt/lists/* /var/cache/apt/*
+RUN apt-get update && apt-get install -y --no-install-recommends wget
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
+RUN apt-get update && apt-get install -y --no-install-recommends google-chrome-stable && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY --from=build-env /app/out .
