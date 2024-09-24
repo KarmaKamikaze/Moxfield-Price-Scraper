@@ -17,9 +17,10 @@ FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 
 # Install chrome
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg2
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
-RUN apt-get update && apt-get install -y --no-install-recommends google-chrome-stable && rm -rf /var/lib/apt/lists/*
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor | \
+    tee /etc/apt/trusted.gpg.d/google.gpg >/dev/null \
+    && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
+RUN apt-get update -qqy && apt-get install -y --no-install-recommends google-chrome-stable && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY --from=build-env /app/out .
