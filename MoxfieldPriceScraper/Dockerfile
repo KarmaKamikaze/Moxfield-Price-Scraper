@@ -18,18 +18,18 @@ WORKDIR /app
 
 # Install chromium
 RUN apt-get update && apt-get install -y \
-    chromium=129.0.6668.58 \
-    libgtk-3-0=3.24.38 \
-    libx11-xcb1=2:1.8.4 \
-    libxcomposite1=1:0.4.5 \
-    libxcursor1=1:1.2.1 \
-    libxdamage1=1:1.1.6 \
-    libxrandr2=2:1.5.2 \
-    libxi6=2:1.8 \
-    libxtst6=2:1.2.3 \
-    libxss1=1:1.2.3 \
-    libasound2=1.2.8 \
-    libdbus-glib-1-2=0.112 \
+    chromium \
+    libgtk-3-0 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxrandr2 \
+    libxi6 \
+    libxtst6 \
+    libxss1 \
+    libasound2 \
+    libdbus-glib-1-2 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
