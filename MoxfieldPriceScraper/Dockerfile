@@ -11,7 +11,7 @@ COPY *.csproj ./
 RUN DOTNET_EnableWriteXorExecute=0 dotnet restore
 
 COPY . ./
-RUN DOTNET_EnableWriteXorExecute=0 dotnet publish -c $BUILD_CONFIGURATION -o out --no-restore -p:DOCKER_BUILD=true
+RUN DOTNET_EnableWriteXorExecute=0 dotnet publish -c $BUILD_CONFIGURATION -p:DOCKER_BUILD=true -o out --no-restore
 
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 WORKDIR /app
