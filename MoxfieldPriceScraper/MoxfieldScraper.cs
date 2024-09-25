@@ -122,7 +122,7 @@ public class MoxfieldScraper : IMoxfieldScraper
         chromeOptions.AddUserProfilePreference("prefs", preferences);
 
         // Skip driver setup for ARM architecture
-        if (!(RuntimeInformation.OSArchitecture == Architecture.Arm ||
+        if (!(RuntimeInformation.OSArchitecture == Architecture.Arm &&
               RuntimeInformation.OSArchitecture == Architecture.Arm64))
         {
             new DriverManager().SetUpDriver(new ChromeConfig());
