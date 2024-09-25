@@ -1,8 +1,9 @@
-﻿using System.Globalization;
+﻿using System.Drawing;
+using System.Globalization;
+using System.Runtime.InteropServices;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using Serilog;
-using System.Drawing;
 using WebDriverManager;
 using WebDriverManager.DriverConfigs.Impl;
 
@@ -10,13 +11,13 @@ namespace MoxfieldPriceScraper;
 
 public class MoxfieldScraper : IMoxfieldScraper
 {
-    private readonly ISettings _settings;
     private readonly string _deckUrl;
+    private readonly TimeSpan _elementSeekTimeout = TimeSpan.FromSeconds(30);
+    private readonly ISettings _settings;
     private string _deckAuthor = string.Empty;
     private string _deckTitle = string.Empty;
-    private readonly TimeSpan _elementSeekTimeout = TimeSpan.FromSeconds(30);
-    private ChromeDriver? _driver;
     private bool _disposed;
+    private ChromeDriver? _driver;
 
     public MoxfieldScraper(string deckUrl, ISettings settings)
     {
@@ -25,7 +26,7 @@ public class MoxfieldScraper : IMoxfieldScraper
         InitializeWebDriver();
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task ScrapeAsync(CancellationToken cancellationToken)
     {
         await _driver!.Navigate().GoToUrlAsync(_deckUrl);
@@ -75,7 +76,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     }
 
     /// <summary>
-    /// Disposes of the WebDriver instance.
+    ///     Disposes of the WebDriver instance.
     /// </summary>
     public void Dispose()
     {
@@ -84,7 +85,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     }
 
     /// <summary>
-    /// Disposes of the WebDriver instance.
+    ///     Disposes of the WebDriver instance.
     /// </summary>
     /// <param name="disposing">Determines if the function is called from Dispose.</param>
     protected virtual void Dispose(bool disposing)
@@ -102,15 +103,14 @@ public class MoxfieldScraper : IMoxfieldScraper
     }
 
     /// <summary>
-    /// Initializes the WebDriver with the required settings.
+    ///     Initializes the WebDriver with the required settings.
     /// </summary>
     private void InitializeWebDriver()
     {
         Log.Debug("Initializing WebDriver");
-        new DriverManager().SetUpDriver(new ChromeConfig());
         var chromeOptions = new ChromeOptions();
         chromeOptions.AddArgument("--no-sandbox"); // Bypass OS security model
-        chromeOptions.AddArgument("--headless"); // Run in headless mode, without a GUI
+        chromeOptions.AddArgument("--headless=new"); // Run in headless mode, without a GUI
         chromeOptions.AddArgument("--window-size=2560,1440"); // Set window size
         chromeOptions.AddArgument("--log-level=3"); // Disable logging
         chromeOptions.AddExcludedArguments("enable-logging"); // Disable logging
@@ -121,15 +121,21 @@ public class MoxfieldScraper : IMoxfieldScraper
         };
         chromeOptions.AddUserProfilePreference("prefs", preferences);
 
+        if (RuntimeInformation.OSArchitecture == Architecture.Arm ||
+            RuntimeInformation.OSArchitecture == Architecture.Arm64)
+        {
+            new DriverManager().SetUpDriver(new ChromeConfig());
+        }
+
         _driver = new ChromeDriver(chromeOptions);
         _driver.Manage().Timeouts().ImplicitWait = _elementSeekTimeout;
         Log.Debug("WebDriver initialized with ImplicitWait set to {Timeout}", _elementSeekTimeout);
     }
 
     /// <summary>
-    /// Gets the location of the Chrome/Chromium browser.
+    ///     Gets the location of the Chrome/Chromium browser.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>Returns the path to the browser binary.</returns>
     private static string GetChromeLocation()
     {
         var options = new ChromeOptions
@@ -140,7 +146,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     }
 
     /// <summary>
-    /// Logs in to Moxfield with the provided credentials.
+    ///     Logs in to Moxfield with the provided credentials.
     /// </summary>
     /// <param name="username">Moxfield username for login.</param>
     /// <param name="password">Moxfield password for login.</param>
@@ -186,7 +192,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     }
 
     /// <summary>
-    /// Sets the price of the deck to the lowest possible value.
+    ///     Sets the price of the deck to the lowest possible value.
     /// </summary>
     private void SetPriceToLowest()
     {
@@ -213,7 +219,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     }
 
     /// <summary>
-    /// Grabs the price of the deck from Moxfield.
+    ///     Grabs the price of the deck from Moxfield.
     /// </summary>
     /// <returns>The Moxfield deck price.</returns>
     private string GetPriceField()
@@ -222,7 +228,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     }
 
     /// <summary>
-    /// Checks if the currency is set to Euro (€) on Moxfield. If it is not, it changes it.
+    ///     Checks if the currency is set to Euro (€) on Moxfield. If it is not, it changes it.
     /// </summary>
     private async Task CheckCurrency()
     {
@@ -236,7 +242,6 @@ public class MoxfieldScraper : IMoxfieldScraper
 
             // Try to find the "up" arrow to change currency to Euro using Cardmarket
             while (true)
-            {
                 try
                 {
                     var upButton = _driver.FindElement(By.CssSelector("#affiliate-control-cardmarket-up"));
@@ -255,7 +260,6 @@ public class MoxfieldScraper : IMoxfieldScraper
                     Log.Debug("Cardmarket affiliate is listed at the top");
                     break;
                 }
-            }
 
             var saveSettingsBox = _driver.FindElement(By.CssSelector(
                 "#maincontent > div > div.row > div.col-lg-8.pe-lg-5.order-2.order-lg-1 > form > " +
@@ -272,7 +276,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     }
 
     /// <summary>
-    /// Gets the price for the deck when it falls under the target price given.
+    ///     Gets the price for the deck when it falls under the target price given.
     /// </summary>
     /// <param name="targetPrice">The target price which we aim to fall under.</param>
     /// <param name="updateFrequency">How often we check for a price update in seconds.</param>
@@ -307,7 +311,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     }
 
     /// <summary>
-    /// Saves a screenshot of the deck page as proof of the optimal price found.
+    ///     Saves a screenshot of the deck page as proof of the optimal price found.
     /// </summary>
     /// <param name="imagePath">The path to the screenshot image.</param>
     private void SaveImageProof(string imagePath = "proof.jpeg")
