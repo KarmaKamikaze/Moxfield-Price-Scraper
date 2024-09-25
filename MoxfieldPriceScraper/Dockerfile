@@ -1,14 +1,9 @@
-﻿FROM alpine:3.20 AS base
-
-RUN useradd -m moxfieldpricescraper
-USER moxfieldpricescraper
-
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
+﻿FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /app
 
 COPY *.csproj ./
-RUN DOTNET_EnableWriteXorExecute=0 dotnet restore --disable-parallel
+RUN DOTNET_EnableWriteXorExecute=0 dotnet restore
 
 COPY . ./
 RUN DOTNET_EnableWriteXorExecute=0 dotnet publish -c $BUILD_CONFIGURATION -o out --no-restore
@@ -16,9 +11,10 @@ RUN DOTNET_EnableWriteXorExecute=0 dotnet publish -c $BUILD_CONFIGURATION -o out
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 WORKDIR /app
 
-# Install chromium
+# Install chromium and dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
+    chromium-driver \
     libgtk-3-0 \
     libx11-xcb1 \
     libxcomposite1 \
@@ -32,6 +28,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdbus-glib-1-2 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m moxfieldpricescraper && chown -R moxfieldpricescraper /app
+USER moxfieldpricescraper
 
 COPY --from=build-env /app/out .
 
