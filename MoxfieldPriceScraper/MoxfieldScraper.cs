@@ -138,7 +138,6 @@ public class MoxfieldScraper : IMoxfieldScraper
     {
         var options = new ChromeOptions
         {
-            BrowserVersion = "stable",
             BinaryLocation = "/usr/bin/chromium"
         };
         return new DriverFinder(options).GetBrowserPath();
