@@ -127,12 +127,13 @@ public class MoxfieldScraper : IMoxfieldScraper
 
 #if DOCKER
         chromeOptions.BinaryLocation = "/usr/bin/chromium";
-        _driver = new ChromeDriver("/usr/bin/chromedriver", chromeOptions);
+        _driver = new ChromeDriver("/usr/bin/chromedriver", chromeOptions, TimeSpan.FromMinutes(5));
 #else
         new DriverManager().SetUpDriver(new ChromeConfig());
         _driver = new ChromeDriver(chromeOptions);
 #endif
 
+        _driver.Manage().Timeouts().PageLoad = _elementSeekTimeout;
         _driver.Manage().Timeouts().ImplicitWait = _elementSeekTimeout;
         Log.Debug("WebDriver initialized with ImplicitWait set to {Timeout}", _elementSeekTimeout);
     }
