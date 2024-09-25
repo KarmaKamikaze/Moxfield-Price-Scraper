@@ -120,7 +120,7 @@ public class MoxfieldScraper : IMoxfieldScraper
         chromeOptions.AddUserProfilePreference("prefs", preferences);
 
 #if DOCKER
-        chromeOptions.BinaryLocation = GetChromeLocation();
+        chromeOptions.BinaryLocation = "/usr/bin/chromium";
 #else
         new DriverManager().SetUpDriver(new ChromeConfig());
 #endif
@@ -128,19 +128,6 @@ public class MoxfieldScraper : IMoxfieldScraper
         _driver = new ChromeDriver(chromeOptions);
         _driver.Manage().Timeouts().ImplicitWait = _elementSeekTimeout;
         Log.Debug("WebDriver initialized with ImplicitWait set to {Timeout}", _elementSeekTimeout);
-    }
-
-    /// <summary>
-    ///     Gets the location of the Chrome/Chromium browser.
-    /// </summary>
-    /// <returns>Returns the path to the browser binary.</returns>
-    private static string GetChromeLocation()
-    {
-        var options = new ChromeOptions
-        {
-            BinaryLocation = "/usr/bin/chromium"
-        };
-        return new DriverFinder(options).GetBrowserPath();
     }
 
     /// <summary>
