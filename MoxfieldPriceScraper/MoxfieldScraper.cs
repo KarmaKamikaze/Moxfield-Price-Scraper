@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using Serilog;
@@ -60,13 +61,17 @@ public class MoxfieldScraper : IMoxfieldScraper
             if (!string.IsNullOrEmpty(_settings.SenderEmailAddress) &&
                 !string.IsNullOrEmpty(_settings.SenderEmailPassword) &&
                 !string.IsNullOrEmpty(_settings.ReceiverEmailAddress))
+            {
                 await EmailService.SendEmailWithEmbeddedImageAsync(_settings.SenderEmailAddress,
                     _settings.SenderEmailPassword,
                     _settings.ReceiverEmailAddress, $"Moxfield Scraper Success on {_deckTitle}!",
                     $"Optimal price found for {_deckTitle}: €{finalPrice}! See attachment proof...",
                     Path.Combine(dataDirectory, $"{_deckTitle}_proof.png"));
+            }
             else
+            {
                 Log.Warning("Email notification settings are not fully configured");
+            }
         }
     }
 
@@ -103,7 +108,6 @@ public class MoxfieldScraper : IMoxfieldScraper
     private void InitializeWebDriver()
     {
         Log.Debug("Initializing WebDriver");
-        new DriverManager().SetUpDriver(new ChromeConfig());
         var chromeOptions = new ChromeOptions();
         chromeOptions.AddArgument("--no-sandbox"); // Bypass OS security model
         chromeOptions.AddArgument("--headless=new"); // Run in headless mode, without a GUI
@@ -116,6 +120,12 @@ public class MoxfieldScraper : IMoxfieldScraper
             { "profile.managed_default_content_settings.images", 2 } // Disable image loading
         };
         chromeOptions.AddUserProfilePreference("prefs", preferences);
+
+        if (RuntimeInformation.OSArchitecture == Architecture.Arm ||
+            RuntimeInformation.OSArchitecture == Architecture.Arm64)
+        {
+            new DriverManager().SetUpDriver(new ChromeConfig());
+        }
 
         _driver = new ChromeDriver(chromeOptions);
         _driver.Manage().Timeouts().ImplicitWait = _elementSeekTimeout;
@@ -290,7 +300,10 @@ public class MoxfieldScraper : IMoxfieldScraper
             Log.Information("{Time}\tPrice Before: [€{BeforePrice}]\tNow: [€{NewPrice}]",
                 DateTime.Now.ToString("dd-MM-yyyy HH:mm:ss"), price, newPrice);
             price = newPrice;
-            if (price > targetPrice) Thread.Sleep(TimeSpan.FromSeconds(updateFrequency));
+            if (price > targetPrice)
+            {
+                Thread.Sleep(TimeSpan.FromSeconds(updateFrequency));
+            }
         }
 
         Log.Information("Optimal price found: €{Price}!", price);
