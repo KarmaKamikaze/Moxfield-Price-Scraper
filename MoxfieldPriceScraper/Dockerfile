@@ -1,4 +1,9 @@
-﻿FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
+﻿FROM alpine:3.20 AS base
+
+RUN useradd -m moxfieldpricescraper
+USER moxfieldpricescraper
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /app
 
@@ -28,9 +33,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdbus-glib-1-2 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-RUN useradd -m moxfieldpricescraper && chown -R moxfieldpricescraper /app
-USER moxfieldpricescraper
 
 COPY --from=build-env /app/out .
 
