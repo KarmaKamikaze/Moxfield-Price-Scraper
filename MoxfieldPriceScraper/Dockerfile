@@ -11,9 +11,6 @@ RUN DOTNET_EnableWriteXorExecute=0 dotnet publish -c $BUILD_CONFIGURATION -o out
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 WORKDIR /app
 
-RUN useradd -m moxfieldpricescraper && chown -R moxfieldpricescraper /app
-USER moxfieldpricescraper
-
 # Install chromium and dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
@@ -31,6 +28,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdbus-glib-1-2 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m moxfieldpricescraper && chown -R moxfieldpricescraper /app
+USER moxfieldpricescraper
 
 COPY --from=build-env /app/out .
 
