@@ -1,4 +1,4 @@
-﻿FROM base
+﻿FROM alpine:3.20 AS base
 
 RUN useradd -m moxfieldpricescraper
 USER moxfieldpricescraper
