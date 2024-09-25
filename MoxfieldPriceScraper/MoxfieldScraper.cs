@@ -11,7 +11,7 @@ namespace MoxfieldPriceScraper;
 public class MoxfieldScraper : IMoxfieldScraper
 {
     private readonly string _deckUrl;
-    private readonly TimeSpan _elementSeekTimeout = TimeSpan.FromSeconds(30);
+    private readonly TimeSpan _elementSeekTimeout = TimeSpan.FromMinutes(2);
     private readonly ISettings _settings;
     private string _deckAuthor = string.Empty;
     private string _deckTitle = string.Empty;
