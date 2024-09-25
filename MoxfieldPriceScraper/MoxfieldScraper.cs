@@ -1,6 +1,5 @@
 ﻿using System.Drawing;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using Serilog;
@@ -121,12 +120,11 @@ public class MoxfieldScraper : IMoxfieldScraper
         };
         chromeOptions.AddUserProfilePreference("prefs", preferences);
 
+#if DOCKER
         // Skip driver setup for ARM architecture
-        if (!(RuntimeInformation.OSArchitecture == Architecture.Arm &&
-              RuntimeInformation.OSArchitecture == Architecture.Arm64))
-        {
-            new DriverManager().SetUpDriver(new ChromeConfig());
-        }
+#else
+        new DriverManager().SetUpDriver(new ChromeConfig());
+#endif
 
         _driver = new ChromeDriver(chromeOptions);
         _driver.Manage().Timeouts().ImplicitWait = _elementSeekTimeout;
