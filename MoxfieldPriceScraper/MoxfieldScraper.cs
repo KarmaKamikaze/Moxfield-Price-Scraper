@@ -110,6 +110,12 @@ public class MoxfieldScraper : IMoxfieldScraper
         var chromeOptions = new ChromeOptions();
         chromeOptions.AddArgument("--no-sandbox"); // Bypass OS security model
         chromeOptions.AddArgument("--headless=new"); // Run in headless mode, without a GUI
+        chromeOptions.AddArgument("--disable-gpu"); // Disables GPU hardware acceleration
+        chromeOptions.AddArgument("--disable-software-rasterizer"); // Disable software rasterizer
+        chromeOptions.AddArgument("--disable-setuid-sandbox"); // Disable setuid sandbox
+        chromeOptions.AddArgument("--disable-crash-reporter"); // Disable crash reporting
+        chromeOptions.AddArgument("--disable-extensions"); // Disable extensions
+        chromeOptions.AddArgument("--disable-dev-shm-usage"); // Disables the /dev/shm memory usage
         chromeOptions.AddArgument("--window-size=2560,1440"); // Set window size
         chromeOptions.AddArgument("--log-level=3"); // Disable logging
         chromeOptions.AddExcludedArguments("enable-logging"); // Disable logging
