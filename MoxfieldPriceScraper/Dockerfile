@@ -29,9 +29,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m moxfieldpricescraper && chown -R moxfieldpricescraper /app
-USER moxfieldpricescraper
-
 COPY --from=build-env /app/out .
 
 HEALTHCHECK --interval=5m --timeout=1m --start-period=30s --retries=3 CMD ["dotnet", "MoxfieldPriceScraper.dll", "healthcheck"]
