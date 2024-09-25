@@ -1,28 +1,37 @@
-﻿FROM debian AS base
-
-RUN useradd -m moxfieldpricescraper
-USER moxfieldpricescraper
-
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
+﻿FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /app
 
 COPY *.csproj ./
-RUN DOTNET_EnableWriteXorExecute=0 dotnet restore --disable-parallel
+RUN DOTNET_EnableWriteXorExecute=0 dotnet restore
 
 COPY . ./
 RUN DOTNET_EnableWriteXorExecute=0 dotnet publish -c $BUILD_CONFIGURATION -o out --no-restore
 
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
-
-# Install chrome
-RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg2
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor | \
-    tee /etc/apt/trusted.gpg.d/google.gpg >/dev/null \
-    && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
-RUN apt-get update && apt-get install -y --no-install-recommends google-chrome-stable && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
+
+RUN useradd -m moxfieldpricescraper && chown -R moxfieldpricescraper /app
+USER moxfieldpricescraper
+
+# Install chromium and dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium \
+    chromium-driver \
+    libgtk-3-0 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxrandr2 \
+    libxi6 \
+    libxtst6 \
+    libxss1 \
+    libasound2 \
+    libdbus-glib-1-2 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build-env /app/out .
 
 HEALTHCHECK --interval=5m --timeout=1m --start-period=30s --retries=3 CMD ["dotnet", "MoxfieldPriceScraper.dll", "healthcheck"]

@@ -110,7 +110,7 @@ public class MoxfieldScraper : IMoxfieldScraper
         new DriverManager().SetUpDriver(new ChromeConfig());
         var chromeOptions = new ChromeOptions();
         chromeOptions.AddArgument("--no-sandbox"); // Bypass OS security model
-        chromeOptions.AddArgument("--headless"); // Run in headless mode, without a GUI
+        chromeOptions.AddArgument("--headless=new"); // Run in headless mode, without a GUI
         chromeOptions.AddArgument("--window-size=2560,1440"); // Set window size
         chromeOptions.AddArgument("--log-level=3"); // Disable logging
         chromeOptions.AddExcludedArguments("enable-logging"); // Disable logging

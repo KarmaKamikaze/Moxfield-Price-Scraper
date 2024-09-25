@@ -2,5 +2,5 @@
 
 public class TaskStatus
 {
-    public Dictionary<string, string> Statuses { get; set; } = new();
+    public Dictionary<string, string> Status { get; set; } = new();
 }

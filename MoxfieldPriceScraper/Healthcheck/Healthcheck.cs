@@ -41,7 +41,7 @@ public static class Healthcheck
             var taskStatus = JsonConvert.DeserializeObject<TaskStatus>(File.ReadAllText(statusFilePath));
             if (taskStatus != null)
             {
-                taskStatus.Statuses[taskName] = status;
+                taskStatus.Status[taskName] = status;
                 File.WriteAllText(statusFilePath, JsonConvert.SerializeObject(taskStatus, Formatting.Indented));
             }
         }
@@ -64,7 +64,7 @@ public static class Healthcheck
             }
 
             var taskStatus = JsonConvert.DeserializeObject<TaskStatus>(File.ReadAllText(statusFilePath));
-            return taskStatus != null && taskStatus.Statuses.ContainsValue("running");
+            return taskStatus != null && taskStatus.Status.ContainsValue("running");
         }
     }
 }
