@@ -113,7 +113,6 @@ public class MoxfieldScraper : IMoxfieldScraper
         chromeOptions.AddArgument("--window-size=2560,1440"); // Set window size
         chromeOptions.AddArgument("--log-level=3"); // Disable logging
         chromeOptions.AddExcludedArguments("enable-logging"); // Disable logging
-        chromeOptions.BinaryLocation = GetChromeLocation();
         var preferences = new Dictionary<string, object>
         {
             { "profile.managed_default_content_settings.images", 2 } // Disable image loading
@@ -121,7 +120,7 @@ public class MoxfieldScraper : IMoxfieldScraper
         chromeOptions.AddUserProfilePreference("prefs", preferences);
 
 #if DOCKER
-        // Skip driver setup for ARM architecture
+        chromeOptions.BinaryLocation = GetChromeLocation();
 #else
         new DriverManager().SetUpDriver(new ChromeConfig());
 #endif
@@ -139,7 +138,8 @@ public class MoxfieldScraper : IMoxfieldScraper
     {
         var options = new ChromeOptions
         {
-            BrowserVersion = "stable"
+            BrowserVersion = "stable",
+            BinaryLocation = "/usr/bin/chromium"
         };
         return new DriverFinder(options).GetBrowserPath();
     }
