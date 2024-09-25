@@ -1,4 +1,9 @@
-﻿FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
+﻿FROM base
+
+RUN useradd -m moxfieldpricescraper
+USER moxfieldpricescraper
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /app
 
