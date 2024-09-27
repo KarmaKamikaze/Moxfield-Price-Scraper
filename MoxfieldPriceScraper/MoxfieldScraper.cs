@@ -2,6 +2,7 @@
 using System.Globalization;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Support.UI;
 using Serilog;
 using WebDriverManager;
 using WebDriverManager.DriverConfigs.Impl;
@@ -17,6 +18,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     private string _deckTitle = string.Empty;
     private bool _disposed;
     private ChromeDriver? _driver;
+    private DefaultWait<IWebDriver>? _fluentWait;
 
     public MoxfieldScraper(string deckUrl, ISettings settings)
     {
@@ -133,9 +135,14 @@ public class MoxfieldScraper : IMoxfieldScraper
         _driver = new ChromeDriver(chromeOptions);
 #endif
 
-        _driver.Manage().Timeouts().PageLoad = _elementSeekTimeout;
-        _driver.Manage().Timeouts().ImplicitWait = _elementSeekTimeout;
-        Log.Debug("WebDriver initialized with ImplicitWait set to {Timeout}", _elementSeekTimeout);
+        _driver.Manage().Timeouts().PageLoad = TimeSpan.FromMinutes(5);
+        _fluentWait = new DefaultWait<IWebDriver>(_driver)
+        {
+            Timeout = _elementSeekTimeout,
+            PollingInterval = TimeSpan.FromSeconds(2)
+        };
+        _fluentWait.IgnoreExceptionTypes(typeof(NoSuchElementException), typeof(ElementNotVisibleException));
+        Log.Debug("WebDriver initialized with waits set to {Timeout}", _elementSeekTimeout);
     }
 
     /// <summary>
@@ -144,10 +151,11 @@ public class MoxfieldScraper : IMoxfieldScraper
     /// <param name="username">Moxfield username for login.</param>
     /// <param name="password">Moxfield password for login.</param>
     /// <exception cref="ArgumentException">No credentials were given.</exception>
+    /// <exception cref="InvalidOperationException">Moxfield login failed.</exception>
     private void LoginToMoxfieldAsync(string username, string password)
     {
-        _deckTitle = _driver!.FindElement(By.CssSelector("#menu-deckname > span")).Text;
-        _deckAuthor = _driver.FindElement(By.CssSelector("#userhover-popup-2 > a")).Text;
+        _deckTitle = _fluentWait!.Until(drv => drv.FindElement(By.CssSelector("#menu-deckname > span"))).Text;
+        _deckAuthor = _fluentWait.Until(drv => drv.FindElement(By.CssSelector("#userhover-popup-2 > a"))).Text;
         Log.Information("Deck [{DeckTitle}] by [{DeckAuthor}] loaded", _deckTitle, _deckAuthor);
 
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
@@ -157,67 +165,125 @@ public class MoxfieldScraper : IMoxfieldScraper
         }
 
         Log.Debug("Initiating login to Moxfield");
-        var loginBox =
-            _driver.FindElement(
-                By.CssSelector("#js-reactroot > header > nav > div > div > ul.navbar-nav.me-0 > li:nth-child(1) > a"));
-        loginBox.Click();
+        var loginBox = _fluentWait!.Until(drv =>
+        {
+            var element =
+                drv.FindElement(By.CssSelector(
+                    "#js-reactroot > header > nav > div > div > ul.navbar-nav.me-0 > li:nth-child(1) > a"));
+            return element.Displayed && element.Enabled ? element : null;
+        });
+        loginBox?.Click();
         Log.Debug("Clicked on login box");
 
-        var usernameField = _driver.FindElement(By.CssSelector("#username"));
-        usernameField.SendKeys(username);
+        var usernameField = _fluentWait!.Until(drv =>
+        {
+            var element = drv.FindElement(By.CssSelector("#username"));
+            return element.Displayed && element.Enabled ? element : null;
+        });
+        usernameField?.SendKeys(username);
         Log.Debug("Entered username");
 
-        var passwordField = _driver.FindElement(By.CssSelector("#password"));
-        passwordField.SendKeys(password);
+        var passwordField = _fluentWait!.Until(drv =>
+        {
+            var element = drv.FindElement(By.CssSelector("#password"));
+            return element.Displayed && element.Enabled ? element : null;
+        });
+        passwordField?.SendKeys(password);
         Log.Debug("Entered password");
 
-        var signInBox = _driver.FindElement(By.CssSelector(
-            "#maincontent > div > div.col-lg-8 > div > div.card.border-0.col-sm-9.col-lg-7 > " +
-            "div > form > div:nth-child(3) > button "));
-        signInBox.Click();
+        var signInBox = _fluentWait!.Until(drv =>
+        {
+            var element = drv.FindElement(By.CssSelector(
+                "#maincontent > div > div.flex-grow-1 > div > div.card.border-0 > div > form > " +
+                "div:nth-child(3) > button"));
+            return element.Displayed && element.Enabled ? element : null;
+        });
+        signInBox?.Click();
         Log.Debug("Clicked on sign in box");
 
-        var waitTimeInSeconds = 3;
-        Log.Debug("Allowing {TimeInSeconds} seconds for login to complete", waitTimeInSeconds);
-        Thread.Sleep(TimeSpan.FromSeconds(waitTimeInSeconds));
-
-        Log.Debug("Successfully logged in to Moxfield");
+        var loginConfirmation = _fluentWait!.Until(drv =>
+        {
+            var element = drv.FindElement(By.CssSelector("#mainmenu-user"));
+            return element.Displayed && element.Enabled ? element : null;
+        });
+        if (loginConfirmation != null)
+        {
+            Log.Debug("Successfully logged in to Moxfield");
+        }
+        else
+        {
+            Log.Error("Failed to log in to Moxfield");
+            throw new InvalidOperationException("Failed to log in to Moxfield");
+        }
     }
 
     /// <summary>
     ///     Sets the price of the deck to the lowest possible value.
     /// </summary>
+    /// <exception cref="InvalidOperationException">Failed to set price to cheapest.</exception>
     private void SetPriceToLowest()
     {
         Log.Debug("Setting price to lowest");
-        var moreBox = _driver!.FindElement(By.CssSelector("#subheader-more > span"));
-        moreBox.Click();
+        var moreBox = _fluentWait!.Until(drv =>
+        {
+            var element = drv.FindElement(By.CssSelector("#subheader-more > span"));
+            return element.Displayed && element.Enabled ? element : null;
+        });
+        moreBox?.Click();
         Log.Debug("Clicked on more box");
 
-        var setLowestBox = _driver.FindElement(By.CssSelector(
-            "body > div.dropdown-menu.show > div > div > div.d-inline-block.dropdown-column-divider > " +
-            "a:nth-child(7) "));
-        setLowestBox.Click();
+        var setLowestBox = _fluentWait.Until(drv =>
+        {
+            var element = drv.FindElement(By.CssSelector(
+                "body > div.dropdown-menu.show > div > div > div.d-inline-block.dropdown-column-divider > " +
+                "a:nth-child(7) "));
+            return element.Displayed && element.Enabled ? element : null;
+        });
+        setLowestBox?.Click();
         Log.Debug("Clicked on set lowest box");
 
-        var confirmBox = _driver.FindElement(By.CssSelector(
-            "body > div.modal.zoom.show.d-block.text-start > div > div > div.modal-footer > " +
-            "button.btn.xfXbvFpydldcPS0H45tv.btn-primary > span.YdEWqn292WqT4MUY5cvf"));
-        confirmBox.Click();
+        var confirmBox = _fluentWait.Until(drv =>
+        {
+            var element = drv.FindElement(By.CssSelector(
+                "body > div.modal.zoom.show.d-block.text-start > div > div > div.modal-footer > " +
+                "button.btn.xfXbvFpydldcPS0H45tv.btn-primary > span.YdEWqn292WqT4MUY5cvf"));
+            return element.Displayed && element.Enabled ? element : null;
+        });
+        confirmBox?.Click();
         Log.Debug("Clicked on confirm box");
 
-        var waitTimeInSeconds = 3;
-        Thread.Sleep(TimeSpan.FromSeconds(waitTimeInSeconds));
-        Log.Debug("Allowing {TimeInSeconds} seconds for settings to save", waitTimeInSeconds);
+        var setConfirmation = _fluentWait.Until(drv =>
+        {
+            var element = drv.FindElement(By.CssSelector("#subheader-more > span"));
+            return element.Displayed && element.Enabled ? element : null;
+        });
+        if (setConfirmation != null)
+        {
+            Log.Debug("Price set to lowest");
+        }
+        else
+        {
+            Log.Error("Failed to set price to lowest");
+            throw new InvalidOperationException("Failed to set price to lowest");
+        }
     }
 
     /// <summary>
     ///     Grabs the price of the deck from Moxfield.
     /// </summary>
     /// <returns>The Moxfield deck price.</returns>
+    /// <exception cref="InvalidOperationException">Failed to set price field.</exception>
     private string GetPriceField()
     {
-        return _driver!.FindElement(By.CssSelector("#shoppingcart")).Text;
+        var priceField = _fluentWait!.Until(drv =>
+        {
+            var element = drv.FindElement(By.CssSelector("#shoppingcart"));
+            return !string.IsNullOrEmpty(element.Text) ? element : null;
+        });
+
+        if (priceField != null) return priceField.Text;
+        Log.Error("Failed to get price field");
+        throw new InvalidOperationException("Failed to get price field");
     }
 
     /// <summary>
@@ -237,7 +303,11 @@ public class MoxfieldScraper : IMoxfieldScraper
             while (true)
                 try
                 {
-                    var upButton = _driver.FindElement(By.CssSelector("#affiliate-control-cardmarket-up"));
+                    var upButton = _fluentWait!.Until(drv =>
+                    {
+                        var element = drv.FindElement(By.CssSelector("#affiliate-control-cardmarket-up"));
+                        return element.Displayed && element.Enabled ? element : null;
+                    });
                     if (upButton != null)
                     {
                         // Click the "up" button to move the item up
@@ -254,10 +324,14 @@ public class MoxfieldScraper : IMoxfieldScraper
                     break;
                 }
 
-            var saveSettingsBox = _driver.FindElement(By.CssSelector(
-                "#maincontent > div > div.row > div.col-lg-8.pe-lg-5.order-2.order-lg-1 > form > " +
-                "div:nth-child(3) > button"));
-            saveSettingsBox.Click();
+            var saveSettingsBox = _fluentWait!.Until(drv =>
+            {
+                var element = drv.FindElement(By.CssSelector(
+                    "#maincontent > div > div.row > div.col-lg-8.pe-lg-5.order-2.order-lg-1 > form > " +
+                    "div:nth-child(3) > button"));
+                return element.Displayed && element.Enabled ? element : null;
+            });
+            saveSettingsBox?.Click();
             Log.Debug("Clicked on save settings box");
 
             var waitTimeInSeconds = 3;
@@ -287,11 +361,14 @@ public class MoxfieldScraper : IMoxfieldScraper
             cancellationToken.ThrowIfCancellationRequested();
 
             await _driver!.Navigate().RefreshAsync();
+
             SetPriceToLowest();
+
             var newPrice = decimal.Parse(GetPriceField().Replace("Cardmarket€", string.Empty).Trim().Split('(')[0],
                 CultureInfo.InvariantCulture);
             Log.Information("{Time}\tPrice Before: [€{BeforePrice}]\tNow: [€{NewPrice}]",
                 DateTime.Now.ToString("dd-MM-yyyy HH:mm:ss"), price, newPrice);
+
             price = newPrice;
             if (price > targetPrice)
             {
@@ -310,8 +387,10 @@ public class MoxfieldScraper : IMoxfieldScraper
     private void SaveImageProof(string imagePath = "proof.jpeg")
     {
         Log.Debug("Saving image proof");
+
         var originalSize = _driver!.Manage().Window.Size;
         Log.Debug("Original window size is [{Width},{Height}]", originalSize.Width, originalSize.Height);
+
         var requiredWidth =
             Convert.ToInt32((long)_driver.ExecuteScript("return document.body.parentNode.scrollWidth"));
         var requiredHeight =
@@ -321,8 +400,12 @@ public class MoxfieldScraper : IMoxfieldScraper
             requiredHeight);
 
         //_driver.GetScreenshot().SaveAsFile(imagePath); // has scrollbar
-        ((ITakesScreenshot)_driver.FindElement(By.TagName("body"))).GetScreenshot()
-            .SaveAsFile(imagePath); // avoids scrollbar
+        var screenshot = _fluentWait!.Until(drv =>
+        {
+            var bodyElement = drv.FindElement(By.TagName("body"));
+            return bodyElement is ITakesScreenshot takesScreenshot ? takesScreenshot.GetScreenshot() : null;
+        }) ?? throw new Exception("Failed to capture screenshot");
+        screenshot.SaveAsFile(imagePath); // avoids scrollbar
         Log.Debug("Screenshot saved as [{ImagePath}]", imagePath);
 
         _driver.Manage().Window.Size = originalSize;
