@@ -4,7 +4,7 @@ RUN useradd -m moxfieldpricescraper
 USER moxfieldpricescraper
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
-ARG BUILD_CONFIGURATION=Release
+ARG BUILD_CONFIGURATION=Debug
 WORKDIR /app
 
 COPY *.csproj ./
