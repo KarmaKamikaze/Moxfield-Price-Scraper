@@ -205,6 +205,10 @@ public class MoxfieldScraper : IMoxfieldScraper
         signInBox?.Click();
         Log.Debug("Clicked on sign in box");
 
+        var waitTimeInSeconds = 3;
+        Thread.Sleep(TimeSpan.FromSeconds(waitTimeInSeconds));
+        Log.Debug("Allowing {TimeInSeconds} seconds for login to go through", waitTimeInSeconds);
+
         var loginConfirmation = _fluentWait!.Until(drv =>
         {
             var element = drv.FindElement(By.CssSelector("#mainmenu-user"));
