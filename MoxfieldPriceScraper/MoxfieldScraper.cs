@@ -181,6 +181,8 @@ public class MoxfieldScraper : IMoxfieldScraper
             return element.Displayed && element.Enabled ? element : null;
         });
         usernameField?.SendKeys(username);
+        _fluentWait.Until(drv =>
+            drv.FindElement(By.CssSelector("#username")).GetAttribute("value").Length == username.Length);
         Log.Debug("Entered username");
 
         var passwordField = _fluentWait!.Until(drv =>
@@ -189,6 +191,8 @@ public class MoxfieldScraper : IMoxfieldScraper
             return element.Displayed && element.Enabled ? element : null;
         });
         passwordField?.SendKeys(password);
+        _fluentWait.Until(drv =>
+            drv.FindElement(By.CssSelector("#password")).GetAttribute("value").Length == password.Length);
         Log.Debug("Entered password");
 
         var signInBox = _fluentWait!.Until(drv =>
