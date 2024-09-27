@@ -12,7 +12,7 @@ if (args.Length > 0 && args[0] == "healthcheck")
     Environment.Exit(1); // Unhealthy, no tasks running
 }
 
-bool debugEnabled = false;
+var debugEnabled = false;
 #if DEBUG
 debugEnabled = true;
 #endif
@@ -48,7 +48,7 @@ try
             try
             {
                 Healthcheck.UpdateTaskStatus(deckCopy.Key, "running");
-                var scraper = new MoxfieldScraper(deckCopy.Value, settings);
+                IMoxfieldScraper scraper = new MoxfieldScraper(deckCopy.Value, settings);
                 await scraper.ScrapeAsync(cancellationToken);
                 Healthcheck.UpdateTaskStatus(deckCopy.Key, "completed");
             }
