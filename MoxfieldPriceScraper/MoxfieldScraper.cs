@@ -120,6 +120,10 @@ public class MoxfieldScraper : IMoxfieldScraper
         chromeOptions.AddArgument("--disable-dev-shm-usage"); // Disables the /dev/shm memory usage
         chromeOptions.AddArgument("--window-size=2560,1440"); // Set window size
         chromeOptions.AddArgument("--log-level=3"); // Disable logging
+        chromeOptions.AddArgument("--disable-webgl"); // Disable WebGL
+        chromeOptions.AddArgument("--disable-webrtc"); // Disable WebRTC
+        chromeOptions.AddArgument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                                  "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
         chromeOptions.AddExcludedArguments("enable-logging"); // Disable logging
         var preferences = new Dictionary<string, object>
         {
@@ -165,7 +169,7 @@ public class MoxfieldScraper : IMoxfieldScraper
         }
 
         Log.Debug("Initiating login to Moxfield");
-        var loginBox = _fluentWait!.Until(drv =>
+        var loginBox = _fluentWait.Until(drv =>
         {
             var element =
                 drv.FindElement(By.CssSelector(
@@ -175,7 +179,9 @@ public class MoxfieldScraper : IMoxfieldScraper
         loginBox?.Click();
         Log.Debug("Clicked on login box");
 
-        var usernameField = _fluentWait!.Until(drv =>
+        Thread.Sleep(TimeSpan.FromSeconds(1)); // Add delays between interactions to avoid bot detection
+
+        var usernameField = _fluentWait.Until(drv =>
         {
             var element = drv.FindElement(By.CssSelector("#username"));
             return element.Displayed && element.Enabled ? element : null;
@@ -185,7 +191,9 @@ public class MoxfieldScraper : IMoxfieldScraper
             drv.FindElement(By.CssSelector("#username")).GetAttribute("value").Length == username.Length);
         Log.Debug("Entered username");
 
-        var passwordField = _fluentWait!.Until(drv =>
+        Thread.Sleep(TimeSpan.FromSeconds(1)); // Add delays between interactions to avoid bot detection
+
+        var passwordField = _fluentWait.Until(drv =>
         {
             var element = drv.FindElement(By.CssSelector("#password"));
             return element.Displayed && element.Enabled ? element : null;
@@ -195,7 +203,9 @@ public class MoxfieldScraper : IMoxfieldScraper
             drv.FindElement(By.CssSelector("#password")).GetAttribute("value").Length == password.Length);
         Log.Debug("Entered password");
 
-        var signInBox = _fluentWait!.Until(drv =>
+        Thread.Sleep(TimeSpan.FromSeconds(1)); // Add delays between interactions to avoid bot detection
+
+        var signInBox = _fluentWait.Until(drv =>
         {
             var element = drv.FindElement(By.CssSelector(
                 "#maincontent > div > div.flex-grow-1 > div > div.card.border-0 > div > form > " +
@@ -205,11 +215,7 @@ public class MoxfieldScraper : IMoxfieldScraper
         signInBox?.Click();
         Log.Debug("Clicked on sign in box");
 
-        var waitTimeInSeconds = 3;
-        Thread.Sleep(TimeSpan.FromSeconds(waitTimeInSeconds));
-        Log.Debug("Allowing {TimeInSeconds} seconds for login to go through", waitTimeInSeconds);
-
-        var loginConfirmation = _fluentWait!.Until(drv =>
+        var loginConfirmation = _fluentWait.Until(drv =>
         {
             var element = drv.FindElement(By.CssSelector("#mainmenu-user"));
             return element.Displayed && element.Enabled ? element : null;
