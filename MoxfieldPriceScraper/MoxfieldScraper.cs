@@ -116,6 +116,7 @@ public class MoxfieldScraper : IMoxfieldScraper
         chromeOptions.AddArgument("--disable-software-rasterizer"); // Disable software rasterizer
         chromeOptions.AddArgument("--disable-setuid-sandbox"); // Disable setuid sandbox
         chromeOptions.AddArgument("--disable-crash-reporter"); // Disable crash reporting
+        chromeOptions.AddArgument("--disable-web-security"); // Disable web security
         chromeOptions.AddArgument("--disable-extensions"); // Disable extensions
         chromeOptions.AddArgument("--disable-dev-shm-usage"); // Disables the /dev/shm memory usage
         chromeOptions.AddArgument("--window-size=2560,1440"); // Set window size
@@ -125,6 +126,9 @@ public class MoxfieldScraper : IMoxfieldScraper
         chromeOptions.AddArgument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                                   "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
         chromeOptions.AddExcludedArguments("enable-logging"); // Disable logging
+        chromeOptions.AddExcludedArguments("enable-automation"); // Disable automation
+        chromeOptions.AddAdditionalOption("useAutomationExtension", false); // Disable automation
+        chromeOptions.AddArgument("--disable-blink-features=AutomationControlled"); // Disable automation
         var preferences = new Dictionary<string, object>
         {
             { "profile.managed_default_content_settings.images", 2 } // Disable image loading
@@ -179,7 +183,7 @@ public class MoxfieldScraper : IMoxfieldScraper
         loginBox?.Click();
         Log.Debug("Clicked on login box");
 
-        Thread.Sleep(TimeSpan.FromSeconds(1)); // Add delays between interactions to avoid bot detection
+        AcceptCookies();
 
         var usernameField = _fluentWait.Until(drv =>
         {
@@ -191,8 +195,6 @@ public class MoxfieldScraper : IMoxfieldScraper
             drv.FindElement(By.CssSelector("#username")).GetAttribute("value").Length == username.Length);
         Log.Debug("Entered username");
 
-        Thread.Sleep(TimeSpan.FromSeconds(1)); // Add delays between interactions to avoid bot detection
-
         var passwordField = _fluentWait.Until(drv =>
         {
             var element = drv.FindElement(By.CssSelector("#password"));
@@ -202,8 +204,6 @@ public class MoxfieldScraper : IMoxfieldScraper
         _fluentWait.Until(drv =>
             drv.FindElement(By.CssSelector("#password")).GetAttribute("value").Length == password.Length);
         Log.Debug("Entered password");
-
-        Thread.Sleep(TimeSpan.FromSeconds(1)); // Add delays between interactions to avoid bot detection
 
         var signInBox = _fluentWait.Until(drv =>
         {
@@ -228,6 +228,29 @@ public class MoxfieldScraper : IMoxfieldScraper
         {
             Log.Error("Failed to log in to Moxfield");
             throw new InvalidOperationException("Failed to log in to Moxfield");
+        }
+    }
+
+    /// <summary>
+    ///     Accepts the cookies on the Moxfield website.
+    /// </summary>
+    private void AcceptCookies()
+    {
+        try
+        {
+            var acceptCookiesButton = _fluentWait!.Until(driver =>
+            {
+                var button = driver.FindElement(By.CssSelector(
+                    "#ncmp__tool > div > div > div.ncmp__banner-actions > div.ncmp__banner-btns > button:nth-child(2)"));
+                return button.Displayed && button.Enabled ? button : null;
+            });
+
+            acceptCookiesButton?.Click();
+            Log.Debug("Clicked on 'Accept Cookies' button");
+        }
+        catch (WebDriverTimeoutException)
+        {
+            Log.Debug("No 'Accept Cookies' button found, proceeding without clicking");
         }
     }
 
