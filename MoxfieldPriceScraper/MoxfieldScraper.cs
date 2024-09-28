@@ -179,7 +179,7 @@ public class MoxfieldScraper : IMoxfieldScraper
         loginBox?.Click();
         Log.Debug("Clicked on login box");
 
-        Thread.Sleep(TimeSpan.FromSeconds(1)); // Add delays between interactions to avoid bot detection
+        AcceptCookies();
 
         var usernameField = _fluentWait.Until(drv =>
         {
@@ -191,8 +191,6 @@ public class MoxfieldScraper : IMoxfieldScraper
             drv.FindElement(By.CssSelector("#username")).GetAttribute("value").Length == username.Length);
         Log.Debug("Entered username");
 
-        Thread.Sleep(TimeSpan.FromSeconds(1)); // Add delays between interactions to avoid bot detection
-
         var passwordField = _fluentWait.Until(drv =>
         {
             var element = drv.FindElement(By.CssSelector("#password"));
@@ -203,7 +201,7 @@ public class MoxfieldScraper : IMoxfieldScraper
             drv.FindElement(By.CssSelector("#password")).GetAttribute("value").Length == password.Length);
         Log.Debug("Entered password");
 
-        Thread.Sleep(TimeSpan.FromSeconds(1)); // Add delays between interactions to avoid bot detection
+        ClickCaptcha();
 
         var signInBox = _fluentWait.Until(drv =>
         {
@@ -228,6 +226,82 @@ public class MoxfieldScraper : IMoxfieldScraper
         {
             Log.Error("Failed to log in to Moxfield");
             throw new InvalidOperationException("Failed to log in to Moxfield");
+        }
+    }
+
+    /// <summary>
+    ///     Accepts the cookies on the Moxfield website.
+    /// </summary>
+    private void AcceptCookies()
+    {
+        try
+        {
+            var acceptCookiesButton = _fluentWait!.Until(driver =>
+            {
+                var button = driver.FindElement(By.CssSelector(
+                    "#ncmp__tool > div > div > div.ncmp__banner-actions > div.ncmp__banner-btns > button:nth-child(2)"));
+                return button.Displayed && button.Enabled ? button : null;
+            });
+
+            acceptCookiesButton?.Click();
+            Log.Debug("Clicked on 'Accept Cookies' button");
+        }
+        catch (WebDriverTimeoutException)
+        {
+            Log.Debug("No 'Accept Cookies' button found, proceeding without clicking");
+        }
+    }
+
+    /// <summary>
+    ///     Clicks the reCAPTCHA checkbox if it is present.
+    /// </summary>
+    private void ClickCaptcha()
+    {
+        var reCaptcha = _fluentWait!.Until(driver =>
+        {
+            try
+            {
+                driver.SwitchTo().Frame(driver.FindElement(By.XPath("//iframe[@title='reCAPTCHA']")));
+                Log.Debug("reCAPTCHA frame found");
+                return true;
+            }
+            catch (NoSuchFrameException)
+            {
+                Log.Debug("reCAPTCHA frame not found");
+                return false;
+            }
+            catch (WebDriverTimeoutException)
+            {
+                Log.Debug("reCAPTCHA frame not found");
+                return false;
+            }
+        });
+
+        if (reCaptcha)
+        {
+            var recaptchaCheckbox = _fluentWait.Until(driver =>
+            {
+                var element = driver.FindElement(By.Id("recaptcha-anchor"));
+                if (element.Enabled && element.Displayed)
+                {
+                    return element;
+                }
+
+                return null;
+            });
+            recaptchaCheckbox?.Click();
+
+            _driver!.SwitchTo().DefaultContent();
+
+            var signInBox = _fluentWait.Until(drv =>
+            {
+                var element = drv.FindElement(By.CssSelector(
+                    "#maincontent > div > div.flex-grow-1 > div > div.card.border-0 > div > form > " +
+                    "div:nth-child(3) > button"));
+                return element.Displayed && element.Enabled ? element : null;
+            });
+            signInBox?.Click();
+            Log.Debug("Clicked on sign in box again after reCAPTCHA");
         }
     }
 
