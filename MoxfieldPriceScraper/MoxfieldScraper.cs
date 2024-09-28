@@ -116,6 +116,7 @@ public class MoxfieldScraper : IMoxfieldScraper
         chromeOptions.AddArgument("--disable-software-rasterizer"); // Disable software rasterizer
         chromeOptions.AddArgument("--disable-setuid-sandbox"); // Disable setuid sandbox
         chromeOptions.AddArgument("--disable-crash-reporter"); // Disable crash reporting
+        chromeOptions.AddArgument("--disable-web-security"); // Disable web security
         chromeOptions.AddArgument("--disable-extensions"); // Disable extensions
         chromeOptions.AddArgument("--disable-dev-shm-usage"); // Disables the /dev/shm memory usage
         chromeOptions.AddArgument("--window-size=2560,1440"); // Set window size
@@ -125,6 +126,9 @@ public class MoxfieldScraper : IMoxfieldScraper
         chromeOptions.AddArgument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                                   "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
         chromeOptions.AddExcludedArguments("enable-logging"); // Disable logging
+        chromeOptions.AddExcludedArguments("enable-automation"); // Disable automation
+        chromeOptions.AddAdditionalOption("useAutomationExtension", false); // Disable automation
+        chromeOptions.AddArgument("--disable-blink-features=AutomationControlled"); // Disable automation
         var preferences = new Dictionary<string, object>
         {
             { "profile.managed_default_content_settings.images", 2 } // Disable image loading
@@ -201,8 +205,6 @@ public class MoxfieldScraper : IMoxfieldScraper
             drv.FindElement(By.CssSelector("#password")).GetAttribute("value").Length == password.Length);
         Log.Debug("Entered password");
 
-        ClickCaptcha();
-
         var signInBox = _fluentWait.Until(drv =>
         {
             var element = drv.FindElement(By.CssSelector(
@@ -249,59 +251,6 @@ public class MoxfieldScraper : IMoxfieldScraper
         catch (WebDriverTimeoutException)
         {
             Log.Debug("No 'Accept Cookies' button found, proceeding without clicking");
-        }
-    }
-
-    /// <summary>
-    ///     Clicks the reCAPTCHA checkbox if it is present.
-    /// </summary>
-    private void ClickCaptcha()
-    {
-        var reCaptcha = _fluentWait!.Until(driver =>
-        {
-            try
-            {
-                driver.SwitchTo().Frame(driver.FindElement(By.XPath("//iframe[@title='reCAPTCHA']")));
-                Log.Debug("reCAPTCHA frame found");
-                return true;
-            }
-            catch (NoSuchFrameException)
-            {
-                Log.Debug("reCAPTCHA frame not found");
-                return false;
-            }
-            catch (WebDriverTimeoutException)
-            {
-                Log.Debug("reCAPTCHA frame not found");
-                return false;
-            }
-        });
-
-        if (reCaptcha)
-        {
-            var recaptchaCheckbox = _fluentWait.Until(driver =>
-            {
-                var element = driver.FindElement(By.Id("recaptcha-anchor"));
-                if (element.Enabled && element.Displayed)
-                {
-                    return element;
-                }
-
-                return null;
-            });
-            recaptchaCheckbox?.Click();
-
-            _driver!.SwitchTo().DefaultContent();
-
-            var signInBox = _fluentWait.Until(drv =>
-            {
-                var element = drv.FindElement(By.CssSelector(
-                    "#maincontent > div > div.flex-grow-1 > div > div.card.border-0 > div > form > " +
-                    "div:nth-child(3) > button"));
-                return element.Displayed && element.Enabled ? element : null;
-            });
-            signInBox?.Click();
-            Log.Debug("Clicked on sign in box again after reCAPTCHA");
         }
     }
 
