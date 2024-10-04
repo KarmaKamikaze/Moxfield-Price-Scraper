@@ -138,6 +138,9 @@ public class MoxfieldScraper : IMoxfieldScraper
 #if DOCKER
         chromeOptions.BinaryLocation = "/usr/bin/chromium";
         _driver = new ChromeDriver("/usr/bin/chromedriver", chromeOptions, TimeSpan.FromMinutes(5));
+# elif LINUX
+        chromeOptions.BinaryLocation = "/usr/bin/chromium-browser";
+        _driver = new ChromeDriver("/usr/bin/chromedriver", chromeOptions, TimeSpan.FromMinutes(5));
 #else
         new DriverManager().SetUpDriver(new ChromeConfig());
         _driver = new ChromeDriver(chromeOptions);

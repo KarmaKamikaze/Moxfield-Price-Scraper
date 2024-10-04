@@ -3,6 +3,9 @@
     <PropertyGroup Condition="'$(DOCKER_BUILD)' == 'true'">
         <DefineConstants>DOCKER</DefineConstants>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(LINUX_BUILD)' == 'true'">
+        <DefineConstants>LINUX</DefineConstants>
+    </PropertyGroup>
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
