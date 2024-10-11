@@ -33,6 +33,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdbus-glib-1-2 \
     xvfb \
     x11-apps \
+    xauth \
     libnss3 \
     libasound2 \
     fonts-noto-color-emoji \
