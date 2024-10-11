@@ -110,6 +110,7 @@ public class MoxfieldScraper : IMoxfieldScraper
     {
         Log.Debug("Initializing WebDriver");
         var chromeOptions = new ChromeOptions();
+        chromeOptions.AddArgument("--headless=new"); // Run in headless mode, without a GUI
         chromeOptions.AddArgument("--no-sandbox"); // Bypass OS security model
         chromeOptions.AddArgument("--disable-gpu"); // Disables GPU hardware acceleration
         chromeOptions.AddArgument("--disable-software-rasterizer"); // Disable software rasterizer
@@ -138,11 +139,9 @@ public class MoxfieldScraper : IMoxfieldScraper
         chromeOptions.BinaryLocation = "/usr/bin/chromium";
         _driver = new ChromeDriver("/usr/bin/chromedriver", chromeOptions, TimeSpan.FromMinutes(5));
 # elif LINUX
-        chromeOptions.AddArgument("--headless=new"); // Run in headless mode, without a GUI
         chromeOptions.BinaryLocation = "/usr/bin/chromium-browser";
         _driver = new ChromeDriver("/usr/bin/chromedriver", chromeOptions, TimeSpan.FromMinutes(5));
 #else
-        chromeOptions.AddArgument("--headless=new"); // Run in headless mode, without a GUI
         new DriverManager().SetUpDriver(new ChromeConfig());
         _driver = new ChromeDriver(chromeOptions);
 #endif
