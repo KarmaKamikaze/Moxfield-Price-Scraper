@@ -14,12 +14,14 @@
       - Sender_EMAIL_PASSWORD=/run/secrets/SENDER_EMAIL_PASSWORD
       - RECEIVER_EMAIL_ADDRESS=${RECEIVER_EMAIL_ADDRESS}
       - DECK_LIST=${DECK_LIST}
+      - DISPLAY=:0
     secrets:
       - MOXFIELD_PASSWORD
       - SENDER_EMAIL_PASSWORD
     volumes:
       - ${PWD}/Data:/app/Data
       - ${PWD}/Logs:/app/Logs
+      - /tmp/.X11-unix:/tmp/.X11-unix
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
 
