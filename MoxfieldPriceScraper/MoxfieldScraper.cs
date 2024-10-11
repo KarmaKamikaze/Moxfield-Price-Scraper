@@ -31,14 +31,14 @@ public class MoxfieldScraper : IMoxfieldScraper
     public async Task ScrapeAsync(CancellationToken cancellationToken)
     {
         await _driver!.Navigate().GoToUrlAsync(_deckUrl);
-        Log.Debug("Navigated to [{DeckUrl}]", _deckUrl);
+        Log.Debug("Navigated to {DeckUrl}", _deckUrl);
         if (!string.IsNullOrEmpty(_settings.MoxfieldUsername) && !string.IsNullOrEmpty(_settings.MoxfieldPassword))
         {
             LoginToMoxfieldAsync(_settings.MoxfieldUsername, _settings.MoxfieldPassword);
         }
         else
         {
-            Log.Warning("Moxfield credentials settings are not fully configured");
+            Log.Fatal("Moxfield credentials settings are not fully configured");
             throw new ArgumentException("Moxfield credentials settings are not fully configured");
         }
 
@@ -47,7 +47,7 @@ public class MoxfieldScraper : IMoxfieldScraper
 
         await CheckCurrency();
         await _driver.Navigate().GoToUrlAsync(_deckUrl);
-        Log.Debug("Return to [{DeckUrl}] after login", _deckUrl);
+        Log.Debug("Return to {DeckUrl} after login", _deckUrl);
         var finalPrice = await GetPrice(_settings.TargetPrice, _settings.UpdateFrequency, cancellationToken);
 
         // Create data directory if it doesn't exist
@@ -111,7 +111,6 @@ public class MoxfieldScraper : IMoxfieldScraper
         Log.Debug("Initializing WebDriver");
         var chromeOptions = new ChromeOptions();
         chromeOptions.AddArgument("--no-sandbox"); // Bypass OS security model
-        chromeOptions.AddArgument("--headless=new"); // Run in headless mode, without a GUI
         chromeOptions.AddArgument("--disable-gpu"); // Disables GPU hardware acceleration
         chromeOptions.AddArgument("--disable-software-rasterizer"); // Disable software rasterizer
         chromeOptions.AddArgument("--disable-setuid-sandbox"); // Disable setuid sandbox
@@ -138,7 +137,12 @@ public class MoxfieldScraper : IMoxfieldScraper
 #if DOCKER
         chromeOptions.BinaryLocation = "/usr/bin/chromium";
         _driver = new ChromeDriver("/usr/bin/chromedriver", chromeOptions, TimeSpan.FromMinutes(5));
+# elif LINUX
+        chromeOptions.AddArgument("--headless=new"); // Run in headless mode, without a GUI
+        chromeOptions.BinaryLocation = "/usr/bin/chromium-browser";
+        _driver = new ChromeDriver("/usr/bin/chromedriver", chromeOptions, TimeSpan.FromMinutes(5));
 #else
+        chromeOptions.AddArgument("--headless=new"); // Run in headless mode, without a GUI
         new DriverManager().SetUpDriver(new ChromeConfig());
         _driver = new ChromeDriver(chromeOptions);
 #endif
@@ -403,8 +407,8 @@ public class MoxfieldScraper : IMoxfieldScraper
 
             var newPrice = decimal.Parse(GetPriceField().Replace("Cardmarket€", string.Empty).Trim().Split('(')[0],
                 CultureInfo.InvariantCulture);
-            Log.Information("{Time}\tPrice Before: [€{BeforePrice}]\tNow: [€{NewPrice}]",
-                DateTime.Now.ToString("dd-MM-yyyy HH:mm:ss"), price, newPrice);
+            Log.Information("Deck: {DeckName}\tPrice Before: [€{BeforePrice}]\tNow: [€{NewPrice}]",
+                _deckTitle, price, newPrice);
 
             price = newPrice;
             if (price > targetPrice)
