@@ -16,7 +16,7 @@ RUN DOTNET_EnableWriteXorExecute=0 dotnet publish -c $BUILD_CONFIGURATION -p:DOC
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 WORKDIR /app
 
-# Install chromium and dependencies
+# Install chromium, xvfb, and dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     chromium-driver \
@@ -31,6 +31,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxss1 \
     libasound2 \
     libdbus-glib-1-2 \
+    xvfb \
+    x11-apps \
+    libnss3 \
+    libasound2 \
+    fonts-noto-color-emoji \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -40,4 +45,4 @@ HEALTHCHECK --interval=5m --timeout=1m --start-period=30s --retries=3 CMD ["dotn
 
 VOLUME ["/app/Data", "/app/Logs"]
 
-ENTRYPOINT ["dotnet", "MoxfieldPriceScraper.dll"]
+ENTRYPOINT ["/bin/sh", "-c", "/usr/bin/xvfb-run -a dotnet MoxfieldPriceScraper.dll"]
